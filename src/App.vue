@@ -94,6 +94,12 @@ const refLi = ref<null | Record<string, HTMLElement>>({})
 const refResizer = ref<null | HTMLElement>(null)
 const refResize = ref<null | HTMLElement[]>(null)
 onMounted(() => {
+  resizeAllElements()
+
+  scrollToActive()
+})
+
+function resizeAllElements() {
   nextTick(() => {
     if (refResizer.value) {
       refResizer.value.style.height = '18px'
@@ -107,9 +113,7 @@ onMounted(() => {
       })
     }
   })
-
-  scrollToActive()
-})
+}
 
 const currentPrompt = computed(() => {
   return store.prompts.find((p) => p.id === selectedPrompt.value)
@@ -137,6 +141,8 @@ watch(store, (store) => {
 const selectedPrompt = ref<string | null>(localStorage.getItem('selectPrompt') ?? null)
 function selectPrompt(id: string) {
   selectedPrompt.value = id
+
+  resizeAllElements()
 
   localStorage.setItem('selectPrompt', id)
 }
