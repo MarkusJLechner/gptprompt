@@ -11,7 +11,9 @@
         v-for="prompt in filteredStore"
         :ref="
           (el) => {
-            refLi[prompt.id] = el
+            if (refLi) {
+              refLi[prompt.id] = el
+            }
           }
         "
       >
@@ -90,7 +92,7 @@ import InputClear from '@/components/InputClear.vue'
 
 let inputSearch = ref('')
 
-const refLi = ref<null | Record<string, HTMLElement>>({})
+const refLi = ref<Record<string, any>>({})
 const refResizer = ref<null | HTMLElement>(null)
 const refResize = ref<null | HTMLElement[]>(null)
 onMounted(() => {
@@ -116,7 +118,7 @@ function resizeAllElements() {
 }
 
 const currentPrompt = computed(() => {
-  return store.prompts.find((p) => p.id === selectedPrompt.value)
+  return store.prompts.find((p: any) => p.id === selectedPrompt.value)
 })
 
 const defaultStore = {
@@ -194,7 +196,7 @@ function copyToClipboard(str: string) {
 }
 
 const filteredStore = computed(() => {
-  return store.prompts.filter((p) => p.name.toLowerCase().includes(inputSearch.value))
+  return store.prompts.filter((p: any) => p.name.toLowerCase().includes(inputSearch.value))
 })
 
 function addPrompt() {
@@ -238,7 +240,7 @@ function addVariable() {
 }
 function deleteVariable(id: string) {
   if (currentPrompt.value) {
-    currentPrompt.value.variables = currentPrompt.value?.variables.filter((v) => v.id !== id)
+    currentPrompt.value.variables = currentPrompt.value?.variables.filter((v: any) => v.id !== id)
   }
 }
 
