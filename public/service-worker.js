@@ -1,3 +1,4 @@
+/* eslint-disable */
 // https://github.com/OliwerDrywa/svelte-pwa/blob/master/public/manifest.json
 
 const cacheName = 'stale-with-revalidate'
