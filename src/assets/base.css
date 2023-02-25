@@ -12,6 +12,10 @@
         bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-blue-500 focus:border-blue-500;
     }
 
+    header {
+        @apply bg-amber-900 p-3 border-l -ml-2 -mr-2 -mt-5
+    }
+
     hr {
         @apply my-5
     }

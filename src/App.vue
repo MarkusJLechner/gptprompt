@@ -1,7 +1,7 @@
 <template>
   <div class="text-white p-3 min-h-full min-w-full flex flex-col md:flex-row pt-5 pb-24">
     <section>
-      <header class="flex w-full gap-3">
+      <div class="flex w-full gap-3">
         <input-clear
           v-model="inputSearch"
           @click="clickFocus"
@@ -11,7 +11,7 @@
         <button class="button px-2 h-10 bg-green-800" @click="addPrompt">
           <icon-add width="25px" />
         </button>
-      </header>
+      </div>
 
       <ul ref="refList" class="mt-3 max-h-52 overflow-y-auto">
         <li
@@ -33,7 +33,7 @@
             @click="selectPrompt(prompt.id)"
             class="flex-1 button"
           >
-            {{ prompt.name }}</button
+            {{ prompt.name || '-' }}</button
           ><button class="button px-2 bg-red-900" @click="deletePrompt(prompt.id)">
             <icon-delete width="25px" />
           </button>
@@ -45,7 +45,7 @@
 
     <div v-if="currentPrompt" class="flex-1 flex" :class="{ 'flex-col': store.flexRow }">
       <section class="flex-1">
-        <header class="my-2">Prompt:</header>
+        <header class="my-2">Prompt</header>
 
         <input
           class="input"
@@ -95,12 +95,13 @@
       <hr class="mr-3" />
 
       <section class="flex-1 -mx-1">
+        <header class="my-2">Variables</header>
         <div
           class="bg-gray-900 rounded-lg p-3 mb-1"
           :key="variable.id"
           v-for="(variable, index) in currentPrompt.variables"
         >
-          <header class="flex w-full gap-3 h-12 items-center mb-2">
+          <div class="flex w-full gap-3 h-12 items-center mb-2">
             <input
               class="input flex-0 mt-2"
               type="text"
@@ -112,7 +113,8 @@
             ><button class="button px-2 bg-red-900 m-0 -mt-1" @click="deleteVariable(variable.id)">
               <icon-delete width="25px" />
             </button>
-          </header>
+          </div>
+
           <textarea
             @input="resize"
             ref="refResize"
@@ -134,9 +136,87 @@
           ></textarea>
         </div>
 
-        <button class="button px-2 bg-green-700" @click="addVariable">
+        <button class="button px-2 bg-green-700 mt-4" @click="addVariable">
           <icon-add width="25px" />
         </button>
+
+        <hr class="mt-12" />
+
+        <section>
+          <header class="my-2">Links</header>
+
+          <div
+            class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center gap-3"
+            :key="link.id"
+            v-for="(link, indexLink) in currentPrompt.links"
+          >
+            <span>{{ link.name || 'url ' + indexLink }}:</span>
+            <button
+              class="button bg-gray-700 rounded-lg p-3 mb-1"
+              :key="variable.id"
+              v-for="(variable, index) in currentPrompt.variables"
+              @click="gotoLink(link, variable)"
+            >
+              {{ variable.name || 'var' + index }} - ${{ index }}
+            </button>
+          </div>
+
+          <hr class="mr-3" />
+
+          <header class="my-3">Links edit</header>
+          <div
+            class="bg-gray-900 rounded-lg p-3 mb-1"
+            :key="link.id"
+            v-for="link in currentPrompt.links"
+          >
+            <div class="flex gap-3">
+              <input
+                class="input"
+                type="text"
+                @dblclick="clickFocus"
+                v-model="link.name"
+                placeholder="Url Name"
+              />
+
+              <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteLink(link.id)">
+                <icon-delete width="25px" />
+              </button>
+            </div>
+
+            <input
+              class="input"
+              type="text"
+              @dblclick="clickFocus"
+              v-model="link.url"
+              placeholder="eg: https://dic.com/?w=$$"
+            />
+          </div>
+
+          <button class="button px-2 bg-green-700 mt-4" @click="addLink">
+            <icon-add width="25px" />
+          </button>
+        </section>
+
+        <section class="block mt-16">
+          <hr />
+
+          <button class="button px-2 bg-gray-700 text-gray-400" @click="backupStore">
+            Backup store
+          </button>
+
+          <div class="flex gap-3">
+            <input
+              class="input flex-1"
+              type="text"
+              @dblclick="clickFocus"
+              v-model="inputSetStore"
+              placeholder="Store object"
+            />
+            <button class="flex-1 button px-2 bg-gray-700 text-gray-400" @click="setStore">
+              Set store
+            </button>
+          </div>
+        </section>
       </section>
     </div>
 
@@ -158,6 +238,8 @@ import IconContainer from '@/components/IconContainer.vue'
 import IconEye from '@/components/IconEye.vue'
 
 let inputSearch = ref('')
+
+let inputSetStore = ref('')
 
 let renderedString = ref('')
 
@@ -201,7 +283,8 @@ const defaultStore = {
       reuseChat: '7d1613a4-161a-421c-988e-8281ac009e00',
       name: 'Learn jap',
       prompt: 'Schreibe einen prompt mit $0',
-      variables: [{ id: nanoid(), text: '', name: '-', promptText: '$_' }]
+      variables: [{ id: nanoid(), text: '', name: '', promptText: '$$' }],
+      links: [{ id: nanoid(), url: '', name: '' }]
     }
   ]
 }
@@ -213,6 +296,13 @@ watch(store, (store) => {
   localStorage.setItem('store', JSON.stringify(store))
   renderedString.value = parseString()
 })
+
+watch(
+  () => store.flexRow,
+  () => {
+    resizeAllElements()
+  }
+)
 
 const selectedPrompt = ref<string | null>(localStorage.getItem('selectPrompt') ?? null)
 function selectPrompt(id: string) {
@@ -238,6 +328,10 @@ function goto() {
   }
 }
 
+function gotoLink(link: any, variable: any) {
+  window.open(link.url.replaceAll('$$', variable.text), '_blank')
+}
+
 function parseString() {
   if (!currentPrompt.value) {
     return
@@ -246,7 +340,7 @@ function parseString() {
   let string = currentPrompt.value.prompt ?? ''
   currentPrompt.value.variables.forEach((v: any, index: number) => {
     if (v.text) {
-      const promptText = v.promptText.replaceAll(`$_`, v.text)
+      const promptText = v.promptText.replaceAll(`$$`, v.text)
       string = string.replaceAll(`$${index}`, promptText)
     } else {
       string = string.replaceAll(`$${index}`, '')
@@ -280,9 +374,10 @@ function addPrompt() {
   store.prompts.push({
     id: newId,
     reuseChat: '',
-    name: '-',
+    name: '',
     prompt: '$0',
-    variables: [{ id: nanoid(), text: '', name: '-', promptText: '$_' }]
+    variables: [{ id: nanoid(), text: '', name: '', promptText: '$$' }],
+    links: [{ id: nanoid(), url: '', name: '' }]
   })
   inputSearch.value = ''
 
@@ -317,13 +412,27 @@ function addVariable() {
   currentPrompt.value?.variables.push({
     id: nanoid(),
     text: '',
-    name: '-',
-    promptText: '$_'
+    name: '',
+    promptText: '$$'
   })
 }
+
+function addLink() {
+  if (!currentPrompt.value?.links) {
+    currentPrompt.value.links = []
+  }
+  currentPrompt.value?.links.push({ id: nanoid(), url: '', name: '' })
+}
+
 function deleteVariable(id: string) {
   if (currentPrompt.value) {
     currentPrompt.value.variables = currentPrompt.value?.variables.filter((v: any) => v.id !== id)
+  }
+}
+
+function deleteLink(id: string) {
+  if (currentPrompt.value) {
+    currentPrompt.value.links = currentPrompt.value?.links.filter((v: any) => v.id !== id)
   }
 }
 
@@ -336,5 +445,23 @@ function clickFocus(e: any) {
   if (e.target?.select) {
     e.target?.select()
   }
+}
+
+function backupStore() {
+  copyToClipboard(localStorage.getItem('store') ?? '')
+}
+function setStore() {
+  if (!inputSetStore.value) {
+    alert('input empty')
+    return
+  }
+
+  localStorage.setItem('store', inputSetStore.value)
+
+  inputSetStore.value = ''
+
+  nextTick(() => {
+    location.reload()
+  })
 }
 </script>
