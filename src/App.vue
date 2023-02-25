@@ -33,8 +33,10 @@
             @click="selectPrompt(prompt.id)"
             class="flex-1 button"
           >
-            {{ prompt.name || '-' }}</button
-          ><button class="button px-2 bg-red-900" @click="deletePrompt(prompt.id)">
+            {{ prompt.name || '-' }}
+          </button>
+
+          <button v-if="isEditMode" class="button px-2 bg-red-900" @click="deletePrompt(prompt.id)">
             <icon-delete width="25px" />
           </button>
         </li>
@@ -47,7 +49,12 @@
       <section class="flex-1">
         <header class="my-2">Prompt</header>
 
+        <span v-if="!isEditMode" class="text-sm my-3 block text-amber-400">{{
+          currentPrompt.name
+        }}</span>
+
         <input
+          v-if="isEditMode"
           class="input"
           type="text"
           @dblclick="clickFocus"
@@ -55,6 +62,7 @@
           placeholder="Name"
         />
         <input-clear
+          v-if="isEditMode"
           v-model="currentPrompt.reuseChat"
           @click="clickFocus"
           placeholder="chat id"
@@ -63,6 +71,7 @@
 
         <textarea
           @input="resize"
+          v-if="isEditMode"
           ref="refResizer"
           @dblclick="clickFocus"
           v-model="currentPrompt.prompt"
@@ -75,12 +84,15 @@
           <button class="button" @click="goto"><icon-link width="25px" /></button>
         </div>
 
-        <div class="mt-4">
+        <div class="mt-4 flex items-baseline">
           <input-checkbox v-model="store.render" class="flex-1"
             ><icon-eye width="25px"
           /></input-checkbox>
           <input-checkbox v-model="store.flexRow" class="mt-2 flex-1"
             ><icon-container width="25px"
+          /></input-checkbox>
+          <input-checkbox v-model="store.editMode" class="mt-2 flex-1"
+            ><icon-edit width="25px"
           /></input-checkbox>
         </div>
 
@@ -102,17 +114,25 @@
           v-for="(variable, index) in currentPrompt.variables"
         >
           <div class="flex w-full gap-3 h-12 items-center mb-2">
-            <input
-              class="input flex-0 mt-2"
-              type="text"
-              @dblclick="clickFocus"
-              v-model="variable.name"
-              placeholder="Name"
-            />
-            <span class="flex-1 block flex items-center"> ${{ index }}</span
-            ><button class="button px-2 bg-red-900 m-0 -mt-1" @click="deleteVariable(variable.id)">
-              <icon-delete width="25px" />
-            </button>
+            <div class="flex w-full gap-3 h-12 items-center" v-if="isEditMode">
+              <input
+                class="input flex-0 mt-2"
+                type="text"
+                @dblclick="clickFocus"
+                v-model="variable.name"
+                placeholder="Name"
+              />
+              <span class="flex-1 block flex items-center"> ${{ index }}</span
+              ><button
+                class="button px-2 bg-red-900 m-0 -mt-1"
+                @click="deleteVariable(variable.id)"
+              >
+                <icon-delete width="25px" />
+              </button>
+            </div>
+            <div class="text-white" v-if="!isEditMode">
+              {{ variable.name || '-' }}
+            </div>
           </div>
 
           <textarea
@@ -127,6 +147,7 @@
 
           <textarea
             @input="resize"
+            v-if="isEditMode"
             ref="refResize"
             class="min-h-32"
             @dblclick="clickFocus"
@@ -136,7 +157,7 @@
           ></textarea>
         </div>
 
-        <button class="button px-2 bg-green-700 mt-4" @click="addVariable">
+        <button v-if="isEditMode" class="button px-2 bg-green-700 mt-4" @click="addVariable">
           <icon-add width="25px" />
         </button>
 
@@ -163,41 +184,43 @@
 
           <hr class="mr-3" />
 
-          <header class="my-3">Links edit</header>
-          <div
-            class="bg-gray-900 rounded-lg p-3 mb-1"
-            :key="link.id"
-            v-for="link in currentPrompt.links"
-          >
-            <div class="flex gap-3">
+          <section v-if="isEditMode">
+            <header class="my-3">Links edit</header>
+            <div
+              class="bg-gray-900 rounded-lg p-3 mb-1"
+              :key="link.id"
+              v-for="link in currentPrompt.links"
+            >
+              <div class="flex gap-3">
+                <input
+                  class="input"
+                  type="text"
+                  @dblclick="clickFocus"
+                  v-model="link.name"
+                  placeholder="Url Name"
+                />
+
+                <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteLink(link.id)">
+                  <icon-delete width="25px" />
+                </button>
+              </div>
+
               <input
                 class="input"
                 type="text"
                 @dblclick="clickFocus"
-                v-model="link.name"
-                placeholder="Url Name"
+                v-model="link.url"
+                placeholder="eg: https://dic.com/?w=$$"
               />
-
-              <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteLink(link.id)">
-                <icon-delete width="25px" />
-              </button>
             </div>
 
-            <input
-              class="input"
-              type="text"
-              @dblclick="clickFocus"
-              v-model="link.url"
-              placeholder="eg: https://dic.com/?w=$$"
-            />
-          </div>
-
-          <button class="button px-2 bg-green-700 mt-4" @click="addLink">
-            <icon-add width="25px" />
-          </button>
+            <button class="button px-2 bg-green-700 mt-4" @click="addLink">
+              <icon-add width="25px" />
+            </button>
+          </section>
         </section>
 
-        <section class="block mt-16">
+        <section class="block mt-16" v-if="isEditMode">
           <hr />
 
           <button class="button px-2 bg-gray-700 text-gray-400" @click="backupStore">
@@ -236,6 +259,7 @@ import IconLink from '@/components/IconLink.vue'
 import InputCheckbox from '@/components/InputCheckbox.vue'
 import IconContainer from '@/components/IconContainer.vue'
 import IconEye from '@/components/IconEye.vue'
+import IconEdit from '@/components/IconEdit.vue'
 
 let inputSearch = ref('')
 
@@ -274,8 +298,13 @@ const currentPrompt = computed(() => {
   return store.prompts.find((p: any) => p.id === selectedPrompt.value)
 })
 
+const isEditMode = computed(() => {
+  return store.editMode
+})
+
 const defaultStore = {
   flexRow: true,
+  editMode: true,
   render: true,
   prompts: [
     {
@@ -305,10 +334,14 @@ watch(
 )
 
 const selectedPrompt = ref<string | null>(localStorage.getItem('selectPrompt') ?? null)
+
+watch(selectedPrompt, () => {
+  resizeAllElements()
+  renderedString.value = parseString()
+})
+
 function selectPrompt(id: string) {
   selectedPrompt.value = id
-
-  resizeAllElements()
 
   localStorage.setItem('selectPrompt', id)
 }
@@ -346,7 +379,6 @@ function parseString() {
       string = string.replaceAll(`$${index}`, '')
     }
   })
-  console.log({ string })
 
   return string
 }
@@ -382,6 +414,8 @@ function addPrompt() {
   inputSearch.value = ''
 
   selectPrompt(newId)
+
+  store.editMode = true
 
   scrollToActive()
 }

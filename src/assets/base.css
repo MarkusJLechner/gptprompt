@@ -13,7 +13,7 @@
     }
 
     header {
-        @apply bg-amber-900 p-3 border-l -ml-2 -mr-2 -mt-5
+        @apply bg-[#181f2e] p-3 border-l -ml-2 -mr-2 -mt-5
     }
 
     hr {
