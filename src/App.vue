@@ -1,5 +1,5 @@
 <template>
-  <div class="text-white p-3 min-h-full min-w-full flex flex-col md:flex-row pt-5">
+  <div class="text-white p-3 min-h-full min-w-full flex flex-col md:flex-row pt-5 pb-24">
     <section>
       <header class="flex w-full gap-3">
         <input-clear
