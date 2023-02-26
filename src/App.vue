@@ -47,37 +47,31 @@
 
     <div v-if="currentPrompt" class="flex-1 flex" :class="{ 'flex-col': store.flexRow }">
       <section class="flex-1">
-        <header class="my-2">Prompt</header>
+        <header class="my-2 flex justify-between">
+          Prompt
+          <span class="text-sm mr-2 block text-amber-400">{{ currentPrompt.name }}</span>
+        </header>
 
-        <span v-if="!isEditMode" class="text-sm my-3 block text-amber-400">{{
-          currentPrompt.name
-        }}</span>
-
-        <input
+        <input-clear
           v-if="isEditMode"
-          class="input"
-          type="text"
-          @dblclick="clickFocus"
           v-model="currentPrompt.name"
           placeholder="Name"
+          class="flex-1 mb-2"
         />
+
         <input-clear
           v-if="isEditMode"
           v-model="currentPrompt.reuseChat"
-          @click="clickFocus"
           placeholder="chat id"
           class="flex-1 mb-2"
         />
 
-        <textarea
-          @input="resize"
-          v-if="isEditMode"
-          ref="refResizer"
-          @dblclick="clickFocus"
-          v-model="currentPrompt.prompt"
+        <input-text-area
           placeholder="Prompt text"
-          style="min-height: 80px"
-        ></textarea>
+          v-model="currentPrompt.prompt"
+          :clear="false"
+          v-if="isEditMode"
+        />
 
         <div class="flex justify-between">
           <button class="button" @click="copy"><icon-copy width="25px" /></button>
@@ -135,26 +129,13 @@
             </div>
           </div>
 
-          <textarea
-            @input="resize"
-            ref="refResize"
-            class="min-h-32"
-            @dblclick="clickFocus"
-            placeholder="variable"
-            style="min-height: 80px"
-            v-model="variable.text"
-          ></textarea>
+          <input-text-area placeholder="variable" v-model="variable.text" />
 
-          <textarea
-            @input="resize"
-            v-if="isEditMode"
-            ref="refResize"
-            class="min-h-32"
-            @dblclick="clickFocus"
+          <input-text-area
             placeholder="variable text"
-            style="min-height: 80px"
             v-model="variable.promptText"
-          ></textarea>
+            v-if="isEditMode"
+          />
         </div>
 
         <button v-if="isEditMode" class="button px-2 bg-green-700 mt-4" @click="addVariable">
@@ -260,6 +241,7 @@ import InputCheckbox from '@/components/InputCheckbox.vue'
 import IconContainer from '@/components/IconContainer.vue'
 import IconEye from '@/components/IconEye.vue'
 import IconEdit from '@/components/IconEdit.vue'
+import InputTextArea from '@/components/InputTextArea.vue'
 
 let inputSearch = ref('')
 
@@ -468,11 +450,6 @@ function deleteLink(id: string) {
   if (currentPrompt.value) {
     currentPrompt.value.links = currentPrompt.value?.links.filter((v: any) => v.id !== id)
   }
-}
-
-function resize(e: any) {
-  e.target.style.height = '18px'
-  e.target.style.height = e.target.scrollHeight + 5 + 'px'
 }
 
 function clickFocus(e: any) {
