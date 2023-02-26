@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onActivated, onMounted, ref } from 'vue'
+import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue'
 import IconSweep from '@/components/IconSweep.vue'
 
 const refResize = ref()
@@ -47,6 +47,13 @@ const input = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
+
+watch(
+  () => input,
+  () => {
+    resizeElement(refResize.value)
+  }
+)
 
 function resize(e: any) {
   resizeElement(e?.target)

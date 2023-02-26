@@ -230,7 +230,7 @@
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { nanoid } from 'nanoid'
 import InputClear from '@/components/InputClear.vue'
 import IconAdd from '@/components/IconAdd.vue'
@@ -252,7 +252,19 @@ let renderedString = ref('')
 const refLi = ref<Record<string, any>>({})
 const refResizer = ref<null | HTMLElement>(null)
 const refResize = ref<null | HTMLElement[]>(null)
+
+const isActive = ref(true)
+
+const handleVisibilityChange = () => {
+  isActive.value = document.visibilityState === 'visible'
+}
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
+
 onMounted(() => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   resizeAllElements()
 
   scrollToActive()
@@ -314,6 +326,10 @@ watch(
     resizeAllElements()
   }
 )
+
+watch(isActive, () => {
+  resizeAllElements()
+})
 
 const selectedPrompt = ref<string | null>(localStorage.getItem('selectPrompt') ?? null)
 
