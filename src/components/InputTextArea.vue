@@ -51,7 +51,17 @@ const input = computed({
 watch(
   () => input,
   () => {
-    resizeElement(refResize.value)
+    nextTick(() => {
+      resizeElement(refResize.value)
+    })
+  }
+)
+watch(
+  () => props.modelValue,
+  () => {
+    nextTick(() => {
+      resizeElement(refResize.value)
+    })
   }
 )
 

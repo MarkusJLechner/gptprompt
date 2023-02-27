@@ -152,9 +152,9 @@
             :key="link.id"
             v-for="(link, indexLink) in currentPrompt.links"
           >
-            <span>{{ link.name || 'url ' + indexLink }}:</span>
+            <span>{{ link.name || 'noname ' + indexLink }}:</span>
             <button
-              class="button bg-gray-700 rounded-lg p-3 mb-1"
+              class="button bg-gray-700 rounded-lg p-3 mb-1 py-[7px]"
               :key="variable.id"
               v-for="(variable, index) in currentPrompt.variables"
               @click="gotoLink(link, variable)"
@@ -178,7 +178,7 @@
                   type="text"
                   @dblclick="clickFocus"
                   v-model="link.name"
-                  placeholder="Url Name"
+                  placeholder="Name"
                 />
 
                 <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteLink(link.id)">
@@ -196,6 +196,88 @@
             </div>
 
             <button class="button px-2 bg-green-700 mt-4" @click="addLink">
+              <icon-add width="25px" />
+            </button>
+          </section>
+        </section>
+
+        <section class="mt-12">
+          <header class="my-2">Scrape</header>
+
+          <div
+            class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center"
+            :key="useVariable.id"
+            v-for="useVariable in currentPrompt.variables"
+          >
+            <div
+              class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center gap-3"
+              :key="scrape.id"
+              v-for="(scrape, scrapeIndex) in currentPrompt.scrapes"
+            >
+              <span class="text-gray-400 text-sm"
+                ><span class="text-white">{{ useVariable.name }}</span> from
+                <span class="text-white">{{ scrape.name || 'noname ' + scrapeIndex }}</span>
+                to</span
+              >
+              <div
+                :key="variable.id"
+                :class="{ loading: !!scrape.loading }"
+                v-for="(variable, index) in currentPrompt.variables"
+              >
+                <button
+                  class="button bg-gray-700 rounded-lg p-3 mb-1 py-[7px] flex"
+                  :class="{ loading: !!scrape.loading }"
+                  v-if="useVariable.id !== variable.id"
+                  @click="scrapeToVariable(scrape, useVariable, variable)"
+                >
+                  {{ variable.name || 'var' + index }} - ${{ index }}
+                  <icon-spinner v-if="!!scrape.loading" class="ml-2 animate-spin" width="20px" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <hr class="mr-3" />
+
+          <section v-if="isEditMode">
+            <header class="my-3">Scrape edit</header>
+            <div
+              class="bg-gray-900 rounded-lg p-3 mb-1"
+              :key="scrape.id"
+              v-for="scrape in currentPrompt.scrapes"
+            >
+              <div class="flex gap-3">
+                <input
+                  class="input"
+                  type="text"
+                  @dblclick="clickFocus"
+                  v-model="scrape.name"
+                  placeholder="Name"
+                />
+
+                <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteScrape(scrape.id)">
+                  <icon-delete width="25px" />
+                </button>
+              </div>
+
+              <input
+                class="input"
+                type="text"
+                @dblclick="clickFocus"
+                v-model="scrape.url"
+                placeholder="eg: https://dic.com/?w=$$"
+              />
+
+              <input
+                class="input"
+                type="text"
+                @dblclick="clickFocus"
+                v-model="scrape.selector"
+                placeholder="Selector"
+              />
+            </div>
+
+            <button class="button px-2 bg-green-700 mt-4" @click="addScrape">
               <icon-add width="25px" />
             </button>
           </section>
@@ -242,6 +324,7 @@ import IconContainer from '@/components/IconContainer.vue'
 import IconEye from '@/components/IconEye.vue'
 import IconEdit from '@/components/IconEdit.vue'
 import InputTextArea from '@/components/InputTextArea.vue'
+import IconSpinner from '@/components/IconSpinner.vue'
 
 let inputSearch = ref('')
 
@@ -307,7 +390,16 @@ const defaultStore = {
       name: 'Learn jap',
       prompt: 'Schreibe einen prompt mit $0',
       variables: [{ id: nanoid(), text: '', name: '', promptText: '$$' }],
-      links: [{ id: nanoid(), url: '', name: '' }]
+      links: [{ id: nanoid(), url: '', name: '' }],
+      scrapes: [
+        {
+          id: nanoid(),
+          url: 'https://dictionary.goo.ne.jp/word/$$/',
+          name: 'goo',
+          selector: '.contents',
+          loading: false
+        }
+      ]
     }
   ]
 }
@@ -363,6 +455,41 @@ function gotoLink(link: any, variable: any) {
   window.open(link.url.replaceAll('$$', variable.text), '_blank')
 }
 
+function scrapeToVariable(scrape: any, useVariable: any, variable: any) {
+  const scrapeUrl = import.meta.env.VITE_SCRAPE
+  const url = scrape.url.replace('$$', useVariable.text)
+
+  console.log('Start scrape', { scrapeUrl, url })
+
+  scrape.loading = true
+
+  fetch(`${scrapeUrl}${encodeURIComponent(url)}`)
+    .then((response) => {
+      if (response.ok) {
+        return response.json()
+      }
+
+      throw new Error('Network response was not ok.')
+    })
+    .then((data) => {
+      let container = document.createElement('div')
+      container.innerHTML = data.contents
+
+      let scrapedContainer = container.querySelector(scrape.selector)
+      if (scrapedContainer) {
+        variable.text = scrapedContainer.innerText.trim()
+
+        console.log('scrapedPage success', scrapedContainer)
+      } else {
+        variable.text = ''
+
+        console.log('selector', scrape.selector)
+        console.log('scrapedPage failed', container)
+      }
+    })
+    .finally(() => (scrape.loading = false))
+}
+
 function parseString() {
   if (!currentPrompt.value) {
     return
@@ -407,7 +534,16 @@ function addPrompt() {
     name: '',
     prompt: '$0',
     variables: [{ id: nanoid(), text: '', name: '', promptText: '$$' }],
-    links: [{ id: nanoid(), url: '', name: '' }]
+    links: [{ id: nanoid(), url: '', name: '' }],
+    scrapes: [
+      {
+        id: nanoid(),
+        url: 'https://dictionary.goo.ne.jp/word/$$/',
+        name: 'goo',
+        selector: '.contents',
+        loading: false
+      }
+    ]
   })
   inputSearch.value = ''
 
@@ -449,6 +585,12 @@ function addVariable() {
   })
 }
 
+function deleteVariable(id: string) {
+  if (currentPrompt.value) {
+    currentPrompt.value.variables = currentPrompt.value?.variables.filter((v: any) => v.id !== id)
+  }
+}
+
 function addLink() {
   if (!currentPrompt.value?.links) {
     currentPrompt.value.links = []
@@ -456,15 +598,22 @@ function addLink() {
   currentPrompt.value?.links.push({ id: nanoid(), url: '', name: '' })
 }
 
-function deleteVariable(id: string) {
-  if (currentPrompt.value) {
-    currentPrompt.value.variables = currentPrompt.value?.variables.filter((v: any) => v.id !== id)
-  }
-}
-
 function deleteLink(id: string) {
   if (currentPrompt.value) {
     currentPrompt.value.links = currentPrompt.value?.links.filter((v: any) => v.id !== id)
+  }
+}
+
+function addScrape() {
+  if (!currentPrompt.value?.scrapes) {
+    currentPrompt.value.scrapes = []
+  }
+  currentPrompt.value?.scrapes.push({ id: nanoid(), url: '', name: '', loading: false })
+}
+
+function deleteScrape(id: string) {
+  if (currentPrompt.value) {
+    currentPrompt.value.scrapes = currentPrompt.value?.scrapes.filter((v: any) => v.id !== id)
   }
 }
 
