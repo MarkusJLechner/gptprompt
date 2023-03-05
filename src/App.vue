@@ -383,6 +383,9 @@ onMounted(() => {
         currentPrompt.value.variables.forEach((v: any) => {
           if (v.shareTarget) {
             v.text = text
+
+            const newUrl = `${window.location.pathname}`
+            window.history.replaceState({}, '', newUrl)
           }
         })
       })
