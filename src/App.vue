@@ -144,7 +144,12 @@
             </div>
           </div>
 
-          <input-text-area placeholder="variable" v-model="variable.text" />
+          <input-text-area
+            placeholder="variable"
+            v-model="variable.text"
+            :readonly="variable.readonly && !isEditMode"
+            :clear="!variable.readonly || isEditMode"
+          />
 
           <input-text-area
             placeholder="variable text"
@@ -153,10 +158,12 @@
           />
 
           <section>
-            <div class="flex" v-if="isEditMode">
-              <span class="mr-3">Scrape</span>
+            <div class="grid grid-cols-2" v-if="isEditMode">
+              <span class="col-span-2">Scrape</span>
               <input-checkbox v-model="variable.scrapeFrom">from</input-checkbox>
               <input-checkbox v-model="variable.scrapeTo">to</input-checkbox>
+              <input-checkbox class="" v-model="variable.readonly">readonly</input-checkbox>
+              <input-checkbox class="" v-model="variable.shareTarget">shared</input-checkbox>
             </div>
 
             <div v-if="!isEditMode && variable.scrapeTo">
@@ -173,25 +180,20 @@
                     <span class="text-gray-600 mx-1">►</span>
                     <span class="text-white">{{ scrape.name || 'noname ' + scrapeIndex }}</span>
                     <span class="text-gray-600 mx-1">►</span>
-                    <div
-                      :key="toVariable.id"
+
+                    <button
+                      class="button text-xs shadow-lg bg-gray-700 rounded-lg p-3 mb-1 py-[3px] flex"
                       :class="{ loading: !!scrape.loading }"
-                      v-for="toVariable in currentPrompt.variables"
+                      v-if="fromVariable.id !== variable.id"
+                      @click="scrapeToVariable(scrape, fromVariable, variable)"
                     >
-                      <button
-                        class="button text-xs shadow-lg bg-gray-700 rounded-lg p-3 mb-1 py-[3px] flex"
-                        :class="{ loading: !!scrape.loading }"
-                        v-if="fromVariable.id !== toVariable.id"
-                        @click="scrapeToVariable(scrape, fromVariable, toVariable)"
-                      >
-                        scrape
-                        <icon-spinner
-                          v-if="!!scrape.loading"
-                          class="ml-2 animate-spin"
-                          width="20px"
-                        />
-                      </button>
-                    </div>
+                      fetch
+                      <icon-spinner
+                        v-if="!!scrape.loading"
+                        class="ml-2 animate-spin"
+                        width="20px"
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -373,6 +375,25 @@ onUnmounted(() => {
 })
 
 onMounted(() => {
+  window.addEventListener('DOMContentLoaded', () => {
+    const parsedUrl = new URL(window.location.toString())
+    const title = parsedUrl.searchParams.get('title')
+    const text = parsedUrl.searchParams.get('text')
+    const url = parsedUrl.searchParams.get('url')
+    console.log('Title shared: ' + title)
+    console.log('Text shared: ' + text)
+    console.log('URL shared: ' + url)
+    if (text) {
+      nextTick(() => {
+        currentPrompt.value.variables.forEach((v) => {
+          if (v.shareTarget) {
+            v.text = text
+          }
+        })
+      })
+    }
+  })
+
   document.addEventListener('visibilitychange', handleVisibilityChange)
   resizeAllElements()
 
@@ -408,6 +429,7 @@ const isEditMode = computed(() => {
 const defaultStore = {
   showSearch: true,
   flexRow: true,
+  readonly: false,
   editMode: true,
   render: true,
   prompts: [
@@ -416,7 +438,18 @@ const defaultStore = {
       reuseChat: '7d1613a4-161a-421c-988e-8281ac009e00',
       name: 'Learn jap',
       prompt: 'Schreibe einen prompt mit $0',
-      variables: [{ id: nanoid(), text: '', name: '', promptText: '$$' }],
+      variables: [
+        {
+          id: nanoid(),
+          text: '',
+          name: '',
+          promptText: '$$',
+          shareTarget: true,
+          scrapeFrom: true,
+          scrapeTo: false,
+          readonly: false,
+        },
+      ],
       links: [{ id: nanoid(), url: '', name: '' }],
       scrapes: [
         {
@@ -576,8 +609,10 @@ function addPrompt() {
         text: 'Kontext',
         name: '',
         promptText: '$$',
+        shareTarget: true,
         scrapeFrom: false,
         scrapeTo: true,
+        readonly: false,
       },
     ],
     links: [], //[{ id: nanoid(), url: '', name: '' }],
@@ -635,8 +670,10 @@ function addVariable() {
     text: '',
     name: '',
     promptText: '$$',
+    shareTarget: false,
     scrapeFrom: false,
     scrapeTo: false,
+    readonly: false,
   })
 }
 

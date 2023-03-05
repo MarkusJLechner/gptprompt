@@ -4,7 +4,7 @@
       :id="'checkbox-' + uid"
       type="checkbox"
       v-model="input"
-      class="w-8 h-8 checkbox rounded-lg text-blue-600 accent-blue-500 bg-gray-700 border-gray-600"
+      class="w-8 h-8 min-h-8 min-w-8 checkbox rounded-lg text-blue-600 accent-blue-500 bg-gray-700 border-gray-600"
     />
     <label
       :for="'checkbox-' + uid"
