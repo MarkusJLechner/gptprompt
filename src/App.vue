@@ -385,7 +385,7 @@ onMounted(() => {
     console.log('URL shared: ' + url)
     if (text) {
       nextTick(() => {
-        currentPrompt.value.variables.forEach((v) => {
+        currentPrompt.value.variables.forEach((v: any) => {
           if (v.shareTarget) {
             v.text = text
           }
