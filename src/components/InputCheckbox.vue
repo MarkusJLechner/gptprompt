@@ -4,7 +4,7 @@
       :id="'checkbox-' + uid"
       type="checkbox"
       v-model="input"
-      class="w-8 h-8 rounded-lg text-blue-600 bg-gray-700 border-gray-600"
+      class="w-8 h-8 checkbox rounded-lg text-blue-600 accent-blue-500 bg-gray-700 border-gray-600"
     />
     <label
       :for="'checkbox-' + uid"
@@ -21,12 +21,12 @@ const uid = getCurrentInstance()?.uid
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
-  modelValue: Boolean
+  modelValue: Boolean,
 })
 
 const input = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 </script>
 

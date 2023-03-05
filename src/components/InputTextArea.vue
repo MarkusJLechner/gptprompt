@@ -28,8 +28,8 @@ const props = defineProps({
   modelValue: String,
   clear: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 onMounted(() => {
@@ -45,7 +45,7 @@ onActivated(() => {
 
 const input = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 watch(
@@ -54,7 +54,7 @@ watch(
     nextTick(() => {
       resizeElement(refResize.value)
     })
-  }
+  },
 )
 watch(
   () => props.modelValue,
@@ -62,7 +62,7 @@ watch(
     nextTick(() => {
       resizeElement(refResize.value)
     })
-  }
+  },
 )
 
 function resize(e: any) {
@@ -74,7 +74,8 @@ function resizeElement(e: any) {
     return
   }
   e.style.height = '18px'
-  e.style.height = e.scrollHeight + 5 + 'px'
+  const height = Math.min(e.scrollHeight + 5, 500)
+  e.style.height = height + 'px'
 }
 </script>
 

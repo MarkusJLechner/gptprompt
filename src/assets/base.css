@@ -18,7 +18,7 @@
     }
 
     header {
-        @apply bg-[#181f2e] p-3 border-l -ml-2 -mr-2 -mt-5
+        @apply bg-[#181f2e] border-l-2 border-gray-600 py-2 pl-3
     }
 
     hr {

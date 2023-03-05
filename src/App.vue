@@ -2,18 +2,32 @@
   <div class="text-white p-3 min-h-full min-w-full flex flex-col md:flex-row pt-5 pb-24">
     <section>
       <div class="flex w-full gap-3">
-        <input-clear
-          v-model="inputSearch"
-          @click="clickFocus"
-          placeholder="Search"
-          class="flex-1 h-10"
-        />
-        <button class="button px-2 h-10 bg-green-800" @click="addPrompt">
-          <icon-add width="25px" />
+        <button class="h-10" @click="store.showSearch = !store.showSearch">
+          <icon-arrow :class="{ 'rotate-90': store.showSearch }" width="25px" />
         </button>
+
+        <div v-if="store.showSearch" class="flex flex-1 gap-3">
+          <input-clear
+            v-model="inputSearch"
+            @click="clickFocus"
+            placeholder="Search"
+            class="flex-1 h-10"
+          />
+          <button class="button px-2 h-10 bg-green-800" @click="addPrompt">
+            <icon-add width="25px" />
+          </button>
+        </div>
+
+        <div
+          v-if="!store.showSearch"
+          class="flex flex-1 gap-3 text-gray-300 items-center"
+          @click="store.showSearch = !store.showSearch"
+        >
+          <span class="block">{{ currentPrompt.name }}</span>
+        </div>
       </div>
 
-      <ul ref="refList" class="mt-3 max-h-52 overflow-y-auto">
+      <ul v-if="store.showSearch" ref="refList" class="mt-3 max-h-52 overflow-y-auto">
         <li
           :key="prompt.id"
           v-for="prompt in filteredStore"
@@ -28,7 +42,7 @@
           <button
             :class="{
               'bg-gray-400 border-b-2': selectedPrompt === prompt.id,
-              'bg-gray-600': selectedPrompt !== prompt.id
+              'bg-gray-600': selectedPrompt !== prompt.id,
             }"
             @click="selectPrompt(prompt.id)"
             class="flex-1 button"
@@ -43,13 +57,22 @@
       </ul>
     </section>
 
-    <hr class="md:mr-3" />
+    <hr class="md:mr-3 my-3" />
 
-    <div v-if="currentPrompt" class="flex-1 flex" :class="{ 'flex-col': store.flexRow }">
+    <div v-if="currentPrompt" class="flex-1 flex flex-row">
       <section class="flex-1">
-        <header class="my-2 flex justify-between">
-          Prompt
-          <span class="text-sm mr-2 block text-amber-400">{{ currentPrompt.name }}</span>
+        <header class="my-2 flex flex-col justify-between">
+          <section>
+            <div class="flex items-baseline">
+              <input-checkbox v-model="store.render" class="flex-1"
+                ><icon-eye fill="#374151" width="25px"
+              /></input-checkbox>
+
+              <input-checkbox v-model="store.editMode" class="flex-1"
+                ><icon-edit stroke="#374151" width="25px"
+              /></input-checkbox>
+            </div>
+          </section>
         </header>
 
         <input-clear
@@ -73,21 +96,13 @@
           v-if="isEditMode"
         />
 
-        <div class="flex justify-between">
-          <button class="button" @click="copy"><icon-copy width="25px" /></button>
-          <button class="button" @click="goto"><icon-link width="25px" /></button>
-        </div>
-
-        <div class="mt-4 flex items-baseline">
-          <input-checkbox v-model="store.render" class="flex-1"
-            ><icon-eye width="25px"
-          /></input-checkbox>
-          <input-checkbox v-model="store.flexRow" class="mt-2 flex-1"
-            ><icon-container width="25px"
-          /></input-checkbox>
-          <input-checkbox v-model="store.editMode" class="mt-2 flex-1"
-            ><icon-edit width="25px"
-          /></input-checkbox>
+        <div class="flex justify-between gap-4 mt-4">
+          <button class="button flex-1 flex justify-center bg-blue-700" @click="copy">
+            <icon-copy width="25px" />
+          </button>
+          <button class="button flex-1 flex justify-center bg-blue-700" @click="goto">
+            <icon-send width="25px" />
+          </button>
         </div>
 
         <div
@@ -136,6 +151,52 @@
             v-model="variable.promptText"
             v-if="isEditMode"
           />
+
+          <section>
+            <div class="flex" v-if="isEditMode">
+              <span class="mr-3">Scrape</span>
+              <input-checkbox v-model="variable.scrapeFrom">from</input-checkbox>
+              <input-checkbox v-model="variable.scrapeTo">to</input-checkbox>
+            </div>
+
+            <div v-if="!isEditMode && variable.scrapeTo">
+              <div :key="fromVariable.id" v-for="fromVariable in currentPrompt.variables">
+                <div v-if="fromVariable.scrapeFrom">
+                  <div
+                    class="flex items-baseline mb-2"
+                    :key="scrape.id"
+                    v-for="(scrape, scrapeIndex) in currentPrompt.scrapes"
+                  >
+                    <span class="text-gray-400 text-sm mr-2">
+                      <span class="text-white">{{ fromVariable.name }}</span>
+                    </span>
+                    <span class="text-gray-600 mx-1">►</span>
+                    <span class="text-white">{{ scrape.name || 'noname ' + scrapeIndex }}</span>
+                    <span class="text-gray-600 mx-1">►</span>
+                    <div
+                      :key="toVariable.id"
+                      :class="{ loading: !!scrape.loading }"
+                      v-for="toVariable in currentPrompt.variables"
+                    >
+                      <button
+                        class="button text-xs shadow-lg bg-gray-700 rounded-lg p-3 mb-1 py-[3px] flex"
+                        :class="{ loading: !!scrape.loading }"
+                        v-if="fromVariable.id !== toVariable.id"
+                        @click="scrapeToVariable(scrape, fromVariable, toVariable)"
+                      >
+                        scrape
+                        <icon-spinner
+                          v-if="!!scrape.loading"
+                          class="ml-2 animate-spin"
+                          width="20px"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
 
         <button v-if="isEditMode" class="button px-2 bg-green-700 mt-4" @click="addVariable">
@@ -145,25 +206,27 @@
         <hr class="mt-12" />
 
         <section>
-          <header class="my-2">Links</header>
+          <section v-if="!!currentPrompt.links?.length">
+            <header class="my-2">Links</header>
 
-          <div
-            class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center gap-3"
-            :key="link.id"
-            v-for="(link, indexLink) in currentPrompt.links"
-          >
-            <span>{{ link.name || 'noname ' + indexLink }}:</span>
-            <button
-              class="button bg-gray-700 rounded-lg p-3 mb-1 py-[7px]"
-              :key="variable.id"
-              v-for="(variable, index) in currentPrompt.variables"
-              @click="gotoLink(link, variable)"
+            <div
+              class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center gap-3"
+              :key="link.id"
+              v-for="(link, indexLink) in currentPrompt.links"
             >
-              {{ variable.name || 'var' + index }} - ${{ index }}
-            </button>
-          </div>
+              <span>{{ link.name || 'noname ' + indexLink }}:</span>
+              <button
+                class="button bg-gray-700 rounded-lg p-3 mb-1 py-[7px]"
+                :key="variable.id"
+                v-for="(variable, index) in currentPrompt.variables"
+                @click="gotoLink(link, variable)"
+              >
+                {{ variable.name || 'var' + index }} - ${{ index }}
+              </button>
+            </div>
 
-          <hr class="mr-3" />
+            <hr class="mr-3" />
+          </section>
 
           <section v-if="isEditMode">
             <header class="my-3">Links edit</header>
@@ -202,43 +265,6 @@
         </section>
 
         <section class="mt-12">
-          <header class="my-2">Scrape</header>
-
-          <div
-            class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center"
-            :key="useVariable.id"
-            v-for="useVariable in currentPrompt.variables"
-          >
-            <div
-              class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center gap-3"
-              :key="scrape.id"
-              v-for="(scrape, scrapeIndex) in currentPrompt.scrapes"
-            >
-              <span class="text-gray-400 text-sm"
-                ><span class="text-white">{{ useVariable.name }}</span> from
-                <span class="text-white">{{ scrape.name || 'noname ' + scrapeIndex }}</span>
-                to</span
-              >
-              <div
-                :key="variable.id"
-                :class="{ loading: !!scrape.loading }"
-                v-for="(variable, index) in currentPrompt.variables"
-              >
-                <button
-                  class="button bg-gray-700 rounded-lg p-3 mb-1 py-[7px] flex"
-                  :class="{ loading: !!scrape.loading }"
-                  v-if="useVariable.id !== variable.id"
-                  @click="scrapeToVariable(scrape, useVariable, variable)"
-                >
-                  {{ variable.name || 'var' + index }} - ${{ index }}
-                  <icon-spinner v-if="!!scrape.loading" class="ml-2 animate-spin" width="20px" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <hr class="mr-3" />
-
           <section v-if="isEditMode">
             <header class="my-3">Scrape edit</header>
             <div
@@ -318,13 +344,13 @@ import InputClear from '@/components/InputClear.vue'
 import IconAdd from '@/components/IconAdd.vue'
 import IconDelete from '@/components/IconDelete.vue'
 import IconCopy from '@/components/IconCopy.vue'
-import IconLink from '@/components/IconLink.vue'
 import InputCheckbox from '@/components/InputCheckbox.vue'
-import IconContainer from '@/components/IconContainer.vue'
 import IconEye from '@/components/IconEye.vue'
 import IconEdit from '@/components/IconEdit.vue'
 import InputTextArea from '@/components/InputTextArea.vue'
 import IconSpinner from '@/components/IconSpinner.vue'
+import IconSend from '@/components/IconSend.vue'
+import IconArrow from '@/components/IconArrow.vue'
 
 let inputSearch = ref('')
 
@@ -380,6 +406,7 @@ const isEditMode = computed(() => {
 })
 
 const defaultStore = {
+  showSearch: true,
   flexRow: true,
   editMode: true,
   render: true,
@@ -397,11 +424,11 @@ const defaultStore = {
           url: 'https://dictionary.goo.ne.jp/word/$$/',
           name: 'goo',
           selector: '.contents',
-          loading: false
-        }
-      ]
-    }
-  ]
+          loading: false,
+        },
+      ],
+    },
+  ],
 }
 const storageStore = JSON.parse(localStorage.getItem('store') ?? JSON.stringify(defaultStore))
 
@@ -416,7 +443,7 @@ watch(
   () => store.flexRow,
   () => {
     resizeAllElements()
-  }
+  },
 )
 
 watch(isActive, () => {
@@ -455,9 +482,9 @@ function gotoLink(link: any, variable: any) {
   window.open(link.url.replaceAll('$$', variable.text), '_blank')
 }
 
-function scrapeToVariable(scrape: any, useVariable: any, variable: any) {
+function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
   const scrapeUrl = import.meta.env.VITE_SCRAPE
-  const url = scrape.url.replace('$$', useVariable.text)
+  const url = scrape.url.replace('$$', fromVariable.text)
 
   console.log('Start scrape', { scrapeUrl, url })
 
@@ -477,11 +504,11 @@ function scrapeToVariable(scrape: any, useVariable: any, variable: any) {
 
       let scrapedContainer = container.querySelector(scrape.selector)
       if (scrapedContainer) {
-        variable.text = scrapedContainer.innerText.trim()
+        toVariable.text = scrapedContainer.innerText.trim()
 
         console.log('scrapedPage success', scrapedContainer)
       } else {
-        variable.text = ''
+        toVariable.text = ''
 
         console.log('selector', scrape.selector)
         console.log('scrapedPage failed', container)
@@ -496,6 +523,15 @@ function parseString() {
   }
 
   let string = currentPrompt.value.prompt ?? ''
+  currentPrompt.value.variables.forEach((v: any, index: number) => {
+    if (v.text) {
+      const promptText = v.promptText.replaceAll(`$$`, v.text)
+      string = string.replaceAll(`$${index}`, promptText)
+    } else {
+      string = string.replaceAll(`$${index}`, '')
+    }
+  })
+
   currentPrompt.value.variables.forEach((v: any, index: number) => {
     if (v.text) {
       const promptText = v.promptText.replaceAll(`$$`, v.text)
@@ -522,7 +558,7 @@ function copyToClipboard(str: string) {
 
 const filteredStore = computed(() => {
   return store.prompts.filter((p: any) =>
-    p.name.toLowerCase().includes(inputSearch.value.toLowerCase())
+    p.name.toLowerCase().includes(inputSearch.value.toLowerCase()),
   )
 })
 
@@ -533,17 +569,34 @@ function addPrompt() {
     reuseChat: '',
     name: '',
     prompt: '$0',
-    variables: [{ id: nanoid(), text: '', name: '', promptText: '$$' }],
-    links: [{ id: nanoid(), url: '', name: '' }],
+    variables: [
+      { id: nanoid(), text: 'Wort', name: '', promptText: '$$', scrapeFrom: true, scrapeTo: false },
+      {
+        id: nanoid(),
+        text: 'Kontext',
+        name: '',
+        promptText: '$$',
+        scrapeFrom: false,
+        scrapeTo: true,
+      },
+    ],
+    links: [], //[{ id: nanoid(), url: '', name: '' }],
     scrapes: [
       {
         id: nanoid(),
         url: 'https://dictionary.goo.ne.jp/word/$$/',
         name: 'goo',
         selector: '.contents',
-        loading: false
-      }
-    ]
+        loading: false,
+      },
+      {
+        id: nanoid(),
+        url: 'https://www.dwds.de/wb/etymwb/$$/',
+        name: 'dwds',
+        selector: '.etymwb-entry',
+        loading: false,
+      },
+    ],
   })
   inputSearch.value = ''
 
@@ -560,7 +613,7 @@ function scrollToActive() {
       refLi.value[selectedPrompt.value]?.scrollIntoView({
         behavior: 'smooth',
         block: 'end',
-        inline: 'nearest'
+        inline: 'nearest',
       })
     }
   })
@@ -581,7 +634,9 @@ function addVariable() {
     id: nanoid(),
     text: '',
     name: '',
-    promptText: '$$'
+    promptText: '$$',
+    scrapeFrom: false,
+    scrapeTo: false,
   })
 }
 

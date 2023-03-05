@@ -8,7 +8,7 @@
   >
     <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
     <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-    <g id="SVGRepo_iconCarrier">
+    <g id="SVGRepo_iconCarrier" stroke-width="0.001">
       <path
         id="Path_129"
         data-name="Path 129"
