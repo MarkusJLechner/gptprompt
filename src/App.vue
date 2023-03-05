@@ -106,7 +106,7 @@
 
       <div
         v-if="store.render"
-        class="mt-3 text-sm text-gray-200 p-3 bg-gray-900 rounded shadow whitespace-pre-wrap"
+        class="mt-3 break-words text-sm text-gray-200 p-3 bg-gray-900 rounded shadow whitespace-pre-wrap"
       >
         {{ renderedString }}
       </div>
