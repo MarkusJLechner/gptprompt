@@ -100,7 +100,8 @@
           <icon-copy width="25px" />
         </button>
         <button class="button flex-1 flex justify-center bg-blue-700" @click="goto">
-          <icon-send width="25px" />
+          <icon-send v-if="!anyLoading" width="25px" />
+          <icon-spinner v-if="anyLoading" width="25px" class="animate-spin" />
         </button>
       </div>
 
@@ -158,6 +159,7 @@
             <input-checkbox v-model="variable.scrapeTo">to</input-checkbox>
             <input-checkbox class="" v-model="variable.readonly">readonly</input-checkbox>
             <input-checkbox class="" v-model="variable.shareTarget">shared</input-checkbox>
+            <input-checkbox class="" v-model="variable.fetchOnShare">fetch</input-checkbox>
           </div>
 
           <div v-if="!isEditMode && variable.scrapeTo">
@@ -303,6 +305,9 @@
       </section>
 
       <section class="block mt-16" v-if="isEditMode">
+        <hr class="mt-6 mb-6 border-gray-600" />
+        <input-checkbox v-model="store.fetchSend">send after fetch</input-checkbox>
+
         <hr class="mt-6 mb-2 border-gray-600" />
         <hr class="mt-0 border-gray-600" />
 
@@ -370,6 +375,7 @@ onUnmounted(() => {
 })
 
 onMounted(() => {
+  grantPermission()
   window.addEventListener('DOMContentLoaded', () => {
     const parsedUrl = new URL(window.location.toString())
     const title = parsedUrl.searchParams.get('title')
@@ -388,6 +394,27 @@ onMounted(() => {
             window.history.replaceState({}, '', newUrl)
           }
         })
+
+        currentPrompt.value?.variables.forEach((to: any) => {
+          if (to.fetchOnShare) {
+            currentPrompt.value?.variables.forEach((from: any) => {
+              if (from.scrapeFrom) {
+                console.log({ to })
+                console.log({ from })
+
+                const res = scrapeToVariable(currentPrompt.value?.scrapes[0], from, to)
+
+                if (store.fetchSend) {
+                  nextTick(() => {
+                    res.then(() => {
+                      goto()
+                    })
+                  })
+                }
+              }
+            })
+          }
+        })
       })
     }
   })
@@ -399,6 +426,42 @@ onMounted(() => {
 
   renderedString.value = parseString()
 })
+
+function grantPermission() {
+  // Check if clipboard read permission is granted
+  navigator.permissions
+    .query({ name: 'clipboard-read' })
+    .then((permissionStatus) => {
+      console.log(permissionStatus.state)
+      if (permissionStatus.state === 'granted') {
+        // Clipboard read permission has been granted
+        // Do something here
+      } else {
+        // Clipboard read permission has not been granted
+        // Request permission or do something else
+      }
+    })
+    .catch((error) => {
+      console.error(error)
+    })
+
+  // Check if clipboard write permission is granted
+  navigator.permissions
+    .query({ name: 'clipboard-write' })
+    .then((permissionStatus) => {
+      console.log(permissionStatus.state)
+      if (permissionStatus.state === 'granted') {
+        // Clipboard write permission has been granted
+        // Do something here
+      } else {
+        // Clipboard write permission has not been granted
+        // Request permission or do something else
+      }
+    })
+    .catch((error) => {
+      console.error(error)
+    })
+}
 
 function resizeAllElements() {
   nextTick(() => {
@@ -425,6 +488,7 @@ const isEditMode = computed(() => {
 })
 
 const defaultStore = {
+  fetchSend: false,
   showSearch: true,
   flexRow: true,
   readonly: false,
@@ -446,6 +510,7 @@ const defaultStore = {
           scrapeFrom: true,
           scrapeTo: false,
           readonly: false,
+          fetchOnShare: false,
         },
       ],
       links: [{ id: nanoid(), url: '', name: '' }],
@@ -521,7 +586,7 @@ function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
 
   scrape.loading = true
 
-  fetch(`${scrapeUrl}${encodeURIComponent(url)}`)
+  return fetch(`${scrapeUrl}${encodeURIComponent(url)}`)
     .then((response) => {
       if (response.ok) {
         return response.json()
@@ -593,6 +658,10 @@ const filteredStore = computed(() => {
   )
 })
 
+const anyLoading = computed(() => {
+  return currentPrompt?.value.scrapes.some((v: any) => v.loading)
+})
+
 function addPrompt() {
   const newId = nanoid()
   store.prompts.push({
@@ -611,6 +680,7 @@ function addPrompt() {
         scrapeFrom: false,
         scrapeTo: true,
         readonly: false,
+        fetchOnShare: false,
       },
     ],
     links: [], //[{ id: nanoid(), url: '', name: '' }],
@@ -672,6 +742,7 @@ function addVariable() {
     scrapeFrom: false,
     scrapeTo: false,
     readonly: false,
+    fetchOnShare: false,
   })
 }
 
