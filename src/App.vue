@@ -428,35 +428,21 @@ onMounted(() => {
 })
 
 function grantPermission() {
-  // Check if clipboard read permission is granted
   navigator.permissions
-    .query({ name: 'clipboard-read' })
+    // eslint-disable-next-line no-undef
+    .query({ name: 'clipboard-read' as PermissionName })
     .then((permissionStatus) => {
       console.log(permissionStatus.state)
-      if (permissionStatus.state === 'granted') {
-        // Clipboard read permission has been granted
-        // Do something here
-      } else {
-        // Clipboard read permission has not been granted
-        // Request permission or do something else
-      }
     })
     .catch((error) => {
       console.error(error)
     })
 
-  // Check if clipboard write permission is granted
   navigator.permissions
-    .query({ name: 'clipboard-write' })
+    // eslint-disable-next-line no-undef
+    .query({ name: 'clipboard-write' as PermissionName })
     .then((permissionStatus) => {
       console.log(permissionStatus.state)
-      if (permissionStatus.state === 'granted') {
-        // Clipboard write permission has been granted
-        // Do something here
-      } else {
-        // Clipboard write permission has not been granted
-        // Request permission or do something else
-      }
     })
     .catch((error) => {
       console.error(error)
