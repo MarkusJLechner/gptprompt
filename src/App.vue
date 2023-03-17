@@ -84,7 +84,7 @@
       <input-clear
         v-if="isEditMode"
         v-model="currentPrompt.reuseChat"
-        placeholder="chat id"
+        placeholder="chat url"
         class="flex-1 mb-2"
       />
 
@@ -312,7 +312,7 @@
         <hr class="mt-0 border-gray-600" />
 
         <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="backupStore">
-          Backup store
+          Get store
         </button>
 
         <div class="flex gap-3">
@@ -483,7 +483,7 @@ const defaultStore = {
   prompts: [
     {
       id: nanoid(),
-      reuseChat: '7d1613a4-161a-421c-988e-8281ac009e00',
+      reuseChat: '',
       name: 'Learn jap',
       prompt: 'Schreibe einen prompt mit $0',
       variables: [
@@ -554,7 +554,7 @@ function copy() {
 function goto() {
   copy()
   if (currentPrompt.value?.reuseChat) {
-    window.open('https://chat.openai.com/chat/' + currentPrompt.value.reuseChat, '_blank')
+    window.open(currentPrompt.value.reuseChat, '_blank')
   } else {
     window.open('https://chat.openai.com/chat', '_blank')
   }
@@ -656,11 +656,11 @@ function addPrompt() {
     name: '',
     prompt: '$0',
     variables: [
-      { id: nanoid(), text: 'Wort', name: '', promptText: '$$', scrapeFrom: true, scrapeTo: false },
+      { id: nanoid(), text: '', name: 'Wort', promptText: '$$', scrapeFrom: true, scrapeTo: false },
       {
         id: nanoid(),
-        text: 'Kontext',
-        name: '',
+        text: '',
+        name: 'Kontext',
         promptText: '$$',
         shareTarget: true,
         scrapeFrom: false,
