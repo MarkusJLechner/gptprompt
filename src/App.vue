@@ -584,9 +584,18 @@ function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
       let container = document.createElement('div')
       container.innerHTML = data.contents
 
+      const elements = container.getElementsByTagName('script');
+      while (elements.length > 0) {
+        elements[0].parentNode.removeChild(elements[0]);
+      }
+
       let scrapedContainer = container.querySelector(scrape.selector)
       if (scrapedContainer) {
-        toVariable.text = scrapedContainer.innerText.trim()
+        let txt = scrapedContainer.innerText.trim()
+
+        txt = txt.replace(/\s{5,}/gm, '  ')
+
+        toVariable.text = txt
 
         console.log('scrapedPage success', scrapedContainer)
       } else {
