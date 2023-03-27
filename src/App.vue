@@ -586,7 +586,7 @@ function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
 
       const elements = container.getElementsByTagName('script');
       while (elements.length > 0) {
-        elements[0].parentNode.removeChild(elements[0]);
+        elements[0]?.parentNode?.removeChild(elements[0]!);
       }
 
       let scrapedContainer = container.querySelector(scrape.selector)
