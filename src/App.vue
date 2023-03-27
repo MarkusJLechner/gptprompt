@@ -656,13 +656,13 @@ function addPrompt() {
     name: '',
     prompt: '$0',
     variables: [
-      { id: nanoid(), text: '', name: 'Wort', promptText: '$$', scrapeFrom: true, scrapeTo: false },
+      { id: nanoid(), text: '', name: 'Wort', promptText: '$$', scrapeFrom: true, shareTarget: true, scrapeTo: false },
       {
         id: nanoid(),
         text: '',
         name: 'Kontext',
         promptText: '$$',
-        shareTarget: true,
+        shareTarget: false,
         scrapeFrom: false,
         scrapeTo: true,
         readonly: false,
