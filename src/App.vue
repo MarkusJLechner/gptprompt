@@ -296,6 +296,27 @@
               v-model="scrape.selector"
               placeholder="Selector"
             />
+
+            <div class="flex align-baseline-center">
+              <input
+                class="input mr-2 col-span-1"
+                type="number"
+                @dblclick="clickFocus"
+                v-model="scrape.clipLength"
+                placeholder="Clip after Char"
+              />
+
+              <input-checkbox class="h-10 col-span-1" v-model="scrape.clipHard"
+                >Clip hard</input-checkbox
+              >
+            </div>
+
+            <input-checkbox
+              class="h-10"
+              v-model="scrape.fetchOnShare"
+              @click="deSelectAllScrapeFetchOnShare"
+              >auto fetch</input-checkbox
+            >
           </div>
 
           <button class="button px-2 bg-green-700 mt-4" @click="addScrape">
@@ -402,7 +423,11 @@ onMounted(() => {
                 console.log({ to })
                 console.log({ from })
 
-                const res = scrapeToVariable(currentPrompt.value?.scrapes[0], from, to)
+                const foundScrape =
+                  currentPrompt.value?.scrapes.find((s: any) => s.fetchOnShare) ??
+                  currentPrompt.value?.scrapes[0]
+
+                const res = scrapeToVariable(foundScrape, from, to)
 
                 if (store.fetchSend) {
                   nextTick(() => {
@@ -422,7 +447,9 @@ onMounted(() => {
   document.addEventListener('visibilitychange', handleVisibilityChange)
   resizeAllElements()
 
-  scrollToActive()
+  setTimeout(() => {
+    scrollToActive()
+  }, 80)
 
   renderedString.value = parseString()
 })
@@ -447,6 +474,10 @@ function grantPermission() {
     .catch((error) => {
       console.error(error)
     })
+}
+
+function deSelectAllScrapeFetchOnShare() {
+  currentPrompt.value?.scrapes.forEach((s: any) => (s.fetchOnShare = false))
 }
 
 function resizeAllElements() {
@@ -507,6 +538,9 @@ const defaultStore = {
           name: 'goo',
           selector: '.contents',
           loading: false,
+          fetchOnShare: false,
+          clipHard: false,
+          clipLength: 2500,
         },
       ],
     },
@@ -584,9 +618,9 @@ function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
       let container = document.createElement('div')
       container.innerHTML = data.contents
 
-      const elements = container.getElementsByTagName('script');
+      const elements = container.getElementsByTagName('script')
       while (elements.length > 0) {
-        elements[0]?.parentNode?.removeChild(elements[0]!);
+        elements[0]?.parentNode?.removeChild(elements[0]!)
       }
 
       let scrapedContainer = container.querySelector(scrape.selector)
@@ -594,6 +628,16 @@ function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
         let txt = scrapedContainer.innerText.trim()
 
         txt = txt.replace(/\s{5,}/gm, '  ')
+
+        if (+scrape.clipLength > 0) {
+          const clipLength = +scrape.clipLength
+          if (scrape.clipHard) {
+            txt = txt.slice(0, clipLength + 1)
+          } else {
+            const sep = '\n\n====--====\n\n'
+            txt = txt.slice(0, clipLength + 1) + sep + txt.slice(clipLength + 1)
+          }
+        }
 
         toVariable.text = txt
 
@@ -665,7 +709,15 @@ function addPrompt() {
     name: '',
     prompt: '$0',
     variables: [
-      { id: nanoid(), text: '', name: 'Wort', promptText: '$$', scrapeFrom: true, shareTarget: true, scrapeTo: false },
+      {
+        id: nanoid(),
+        text: '',
+        name: 'Wort',
+        promptText: '$$',
+        scrapeFrom: true,
+        shareTarget: true,
+        scrapeTo: false,
+      },
       {
         id: nanoid(),
         text: '',
@@ -675,7 +727,7 @@ function addPrompt() {
         scrapeFrom: false,
         scrapeTo: true,
         readonly: false,
-        fetchOnShare: false,
+        fetchOnShare: true,
       },
     ],
     links: [], //[{ id: nanoid(), url: '', name: '' }],
@@ -686,6 +738,9 @@ function addPrompt() {
         name: 'goo',
         selector: '.contents',
         loading: false,
+        fetchOnShare: false,
+        clipHard: false,
+        clipLength: 2500,
       },
       {
         id: nanoid(),
@@ -693,6 +748,9 @@ function addPrompt() {
         name: 'dwds',
         selector: '.etymwb-entry',
         loading: false,
+        fetchOnShare: false,
+        clipHard: false,
+        clipLength: 2500,
       },
     ],
   })
@@ -764,7 +822,15 @@ function addScrape() {
   if (!currentPrompt.value?.scrapes) {
     currentPrompt.value.scrapes = []
   }
-  currentPrompt.value?.scrapes.push({ id: nanoid(), url: '', name: '', loading: false })
+  currentPrompt.value?.scrapes.push({
+    id: nanoid(),
+    url: '',
+    name: '',
+    loading: false,
+    fetchOnShare: false,
+    clipHard: false,
+    clipLength: 2500,
+  })
 }
 
 function deleteScrape(id: string) {
