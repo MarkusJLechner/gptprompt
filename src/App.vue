@@ -382,6 +382,16 @@
           </button>
         </div>
       </section>
+
+      <section>
+        <hr class="mt-4 border-gray-600" />
+        <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
+          Save to file
+        </button>
+        <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
+          Load from file
+        </button>
+      </section>
     </section>
 
     <RouterView />
@@ -467,6 +477,86 @@ onMounted(() => {
 
   renderedString.value = parseString()
 })
+
+async function saveToFile() {
+  await verifyPermission()
+
+  await writeFile(await getSaveHandle(), localStorage.getItem('store') ?? '{}')
+}
+
+async function loadFromFile() {
+  // await verifyPermission()
+  const file = await (await getOpenHandle()).getFile()
+  const contents = await file.text()
+  console.log({ contents })
+  try {
+    const json = JSON.parse(contents)
+    if (!json.prompts) {
+      throw Error('Json has no prompts')
+    }
+
+    localStorage.setItem('store', contents)
+  } catch (e) {
+    console.error('Failed parse')
+    console.error(e)
+  }
+}
+
+let fileSaveHandle = null
+async function getSaveHandle() {
+  if (fileSaveHandle) {
+    return fileSaveHandle
+  }
+
+  const date = new Date().toISOString().slice(0, 10)
+
+  const options = {
+    mode: 'readwrite',
+    suggestedName: `gptprompt-store-${date}.json`,
+    startIn: 'documents',
+    types: [
+      {
+        description: 'Store .json',
+        accept: {
+          'text/plain': ['.json'],
+        },
+      },
+    ],
+  }
+  fileSaveHandle = await (window as any).showSaveFilePicker(options)
+  return fileSaveHandle
+}
+
+let fileOpenHandle = null
+async function getOpenHandle() {
+  // if (fileOpenHandle) {
+  //   return fileOpenHandle
+  // }
+  const [fileHandle] = await (window as any).showOpenFilePicker({
+    startIn: 'documents',
+  })
+  fileOpenHandle = fileHandle
+  return fileOpenHandle
+}
+
+async function writeFile(fileHandle, contents) {
+  const writable = await fileHandle.createWritable()
+  await writable.write(contents)
+  await writable.close()
+}
+
+async function verifyPermission() {
+  const fileHandle = await getSaveHandle()
+
+  const options = { mode: 'readwrite' }
+  if ((await fileHandle.queryPermission(options)) === 'granted') {
+    return true
+  }
+  if ((await fileHandle.requestPermission(options)) === 'granted') {
+    return true
+  }
+  return false
+}
 
 function scrapeFromTo() {
   currentPrompt.value?.variables.forEach((to: any) => {
