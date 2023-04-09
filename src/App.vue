@@ -479,13 +479,14 @@ onMounted(() => {
 })
 
 async function saveToFile() {
-  await verifyPermission()
+  await verifyPermission(await getSaveHandle())
 
   await writeFile(await getSaveHandle(), localStorage.getItem('store') ?? '{}')
 }
 
 async function loadFromFile() {
-  // await verifyPermission()
+  await verifyPermission(await getOpenHandle())
+
   const file = await (await getOpenHandle()).getFile()
   const contents = await file.text()
   console.log({ contents })
@@ -545,9 +546,7 @@ async function writeFile(fileHandle, contents) {
   await writable.close()
 }
 
-async function verifyPermission() {
-  const fileHandle = await getSaveHandle()
-
+async function verifyPermission(fileHandle) {
   const options = { mode: 'readwrite' }
   if ((await fileHandle.queryPermission(options)) === 'granted') {
     return true
