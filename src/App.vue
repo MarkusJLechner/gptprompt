@@ -1,5 +1,7 @@
 <template>
-  <div class="text-white p-3 min-h-full min-w-full gap-4 grid grid-cols-12 md:flex-row pt-5 pb-24">
+  <div
+    class="auto-rows-max text-white p-3 min-h-full min-w-full gap-4 grid grid-cols-12 md:flex-row pt-5 pb-24"
+  >
     <section class="col-span-12">
       <div class="flex w-full gap-3">
         <button class="h-10" @click="store.showSearch = !store.showSearch">
@@ -352,45 +354,45 @@
             <icon-add width="25px" />
           </button>
         </section>
-      </section>
 
-      <section class="block mt-16" v-if="isEditMode">
-        <hr class="mt-6 mb-6 border-gray-600" />
-        <input-checkbox v-model="store.fetchSend">send after fetch</input-checkbox>
+        <section class="block mt-16" v-if="isEditMode">
+          <hr class="mt-6 mb-6 border-gray-600" />
+          <input-checkbox v-model="store.fetchSend">send after fetch</input-checkbox>
 
-        <hr class="mt-6 mb-2 border-gray-600" />
-        <hr class="mt-0 border-gray-600" />
+          <hr class="mt-6 mb-2 border-gray-600" />
+          <hr class="mt-0 border-gray-600" />
 
-        <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="backupStore">
-          Get store
-        </button>
-
-        <div class="flex gap-3">
-          <input
-            class="input flex-1"
-            type="text"
-            @dblclick="clickFocus"
-            v-model="inputSetStore"
-            placeholder="Store object"
-          />
-          <button
-            class="flex-1 button px-2 bg-gray-700 text-gray-400"
-            :class="{ 'bg-transparent text-gray-700': !inputSetStore }"
-            @click="setStore"
-          >
-            Set store
+          <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="backupStore">
+            Get store
           </button>
-        </div>
-      </section>
 
-      <section v-if="isEditMode">
-        <hr class="mt-4 border-gray-600" />
-        <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
-          Save to file
-        </button>
-        <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
-          Load from file
-        </button>
+          <div class="flex gap-3">
+            <input
+              class="input flex-1"
+              type="text"
+              @dblclick="clickFocus"
+              v-model="inputSetStore"
+              placeholder="Store object"
+            />
+            <button
+              class="flex-1 button px-2 bg-gray-700 text-gray-400"
+              :class="{ 'bg-transparent text-gray-700': !inputSetStore }"
+              @click="setStore"
+            >
+              Set store
+            </button>
+          </div>
+        </section>
+
+        <section v-if="isEditMode">
+          <hr class="mt-4 border-gray-600" />
+          <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
+            Save to file
+          </button>
+          <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
+            Load from file
+          </button>
+        </section>
       </section>
     </section>
 
