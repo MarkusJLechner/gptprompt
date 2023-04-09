@@ -383,7 +383,7 @@
         </div>
       </section>
 
-      <section>
+      <section v-if="isEditMode">
         <hr class="mt-4 border-gray-600" />
         <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
           Save to file
