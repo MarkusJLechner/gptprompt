@@ -7,6 +7,7 @@
     :class="{ 'rounded-b-lg': !clear }"
     style="min-height: 80px"
     v-model="input"
+    @copy="doCopy"
   ></textarea>
   <button
     v-if="clear"
@@ -23,7 +24,12 @@ import IconSweep from '@/components/IconSweep.vue'
 
 const refResize = ref()
 
-const emit = defineEmits(['update:modelValue'])
+function doCopy() {
+  const selection = document.getSelection().toString() || input.value
+  emit('doCopy', selection)
+}
+
+const emit = defineEmits(['update:modelValue', 'doCopy'])
 const props = defineProps({
   modelValue: String,
   clear: {

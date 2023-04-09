@@ -23,11 +23,11 @@
           class="flex flex-1 gap-3 text-gray-300 items-center"
           @click="store.showSearch = !store.showSearch"
         >
-          <span class="block">{{ currentPrompt.name }}</span>
+          <span class="block">{{ currentPrompt?.name ?? 'none' }}</span>
         </div>
       </div>
 
-      <ul v-if="store.showSearch" ref="refList" class="mt-3 max-h-52 overflow-y-auto">
+      <ul v-if="store.showSearch" ref="refList" class="mt-3 max-h-64 overflow-y-auto">
         <li
           :key="prompt.id"
           v-for="prompt in filteredStore"
@@ -111,6 +111,35 @@
       >
         {{ renderedString }}
       </div>
+
+      <section class="mt-12">
+        <header class="my-2">Shared history</header>
+        <div
+          class="bg-slate-900 mb-2 rounded-md p-2"
+          :key="index"
+          v-for="(history, index) in store.sharedHistory"
+        >
+          <div class="flex">
+            <div class="truncate flex-1 text-ellipsis whitespace-nowrap block">
+              {{ history || '-empty-' }}
+            </div>
+            <button class="p-2 bg-slate-800 rounded-lg" @click="removeShareHistory(index)">
+              <icon-delete class="h-3" />
+            </button>
+          </div>
+
+          <div class="flex flex-wrap gap-2 mt-2">
+            <div :key="vIndex" v-for="(fromVariable, vIndex) in currentPrompt.variables">
+              <button
+                class="button text-xs shadow-lg bg-gray-700 rounded-lg px-3 mb-1 py-[5px] flex"
+                @click="pasteShareHistory(index, fromVariable)"
+              >
+                {{ fromVariable.name }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
 
     <section v-if="currentPrompt" class="col-span-7 flex-1 -mx-1">
@@ -129,7 +158,7 @@
               v-model="variable.name"
               placeholder="Name"
             />
-            <span class="flex-1 block flex items-center"> ${{ index }}</span
+            <span class="flex-1 flex items-center"> ${{ index }}</span
             ><button class="button px-2 bg-red-900 m-0 -mt-1" @click="deleteVariable(variable.id)">
               <icon-delete width="25px" />
             </button>
@@ -361,7 +390,7 @@
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { nanoid } from 'nanoid'
 import InputClear from '@/components/InputClear.vue'
 import IconAdd from '@/components/IconAdd.vue'
@@ -374,6 +403,8 @@ import InputTextArea from '@/components/InputTextArea.vue'
 import IconSpinner from '@/components/IconSpinner.vue'
 import IconSend from '@/components/IconSend.vue'
 import IconArrow from '@/components/IconArrow.vue'
+
+const maxShareHistory = 6
 
 let inputSearch = ref('')
 
@@ -407,6 +438,12 @@ onMounted(() => {
     console.log('URL shared: ' + url)
     if (text) {
       nextTick(() => {
+        addShareHistory(text)
+
+        if (!currentPrompt.value) {
+          return
+        }
+
         currentPrompt.value.variables.forEach((v: any) => {
           if (v.shareTarget) {
             v.text = text
@@ -476,6 +513,34 @@ function grantPermission() {
     })
 }
 
+function addShareHistory(txt) {
+  console.log(txt.value)
+  if (!store.sharedHistory) {
+    store.sharedHistory = []
+  }
+
+  store.sharedHistory = [txt, ...store.sharedHistory]
+
+  store.sharedHistory = [...store.sharedHistory.slice(0, maxShareHistory)]
+}
+function removeShareHistory(indexOf) {
+  if (!store.sharedHistory) {
+    store.sharedHistory = []
+  }
+
+  if (indexOf !== -1) {
+    store.sharedHistory = [
+      ...store.sharedHistory.slice(0, indexOf),
+      ...store.sharedHistory.slice(indexOf + 1),
+    ]
+  }
+  return store.sharedHistory
+}
+
+function pasteShareHistory(index, variable) {
+  variable.text = store.sharedHistory[index]
+}
+
 function deSelectAllScrapeFetchOnShare() {
   currentPrompt.value?.scrapes.forEach((s: any) => (s.fetchOnShare = false))
 }
@@ -483,12 +548,14 @@ function deSelectAllScrapeFetchOnShare() {
 function resizeAllElements() {
   nextTick(() => {
     if (refResizer.value) {
-      refResizer.value.style.height = '18px'
-      refResizer.value.style.height = refResizer.value.scrollHeight + 5 + 'px'
+      if ('style' in refResizer.value) {
+        refResizer.value.style.height = '18px'
+        refResizer.value.style.height = refResizer.value.scrollHeight + 5 + 'px'
+      }
     }
 
     if (refResize.value) {
-      refResize.value.forEach((e) => {
+      refResize.value?.forEach((e) => {
         e.style.height = '18px'
         e.style.height = e.scrollHeight + 5 + 'px'
       })
@@ -511,6 +578,7 @@ const defaultStore = {
   readonly: false,
   editMode: true,
   render: true,
+  sharedHistory: [],
   prompts: [
     {
       id: nanoid(),
@@ -521,7 +589,7 @@ const defaultStore = {
         {
           id: nanoid(),
           text: '',
-          name: '',
+          name: 'Wort',
           promptText: '$$',
           shareTarget: true,
           scrapeFrom: true,
@@ -529,8 +597,19 @@ const defaultStore = {
           readonly: false,
           fetchOnShare: false,
         },
+        {
+          id: nanoid(),
+          text: '',
+          name: 'Kontext',
+          promptText: '$$',
+          shareTarget: false,
+          scrapeFrom: false,
+          scrapeTo: true,
+          readonly: false,
+          fetchOnShare: true,
+        },
       ],
-      links: [{ id: nanoid(), url: '', name: '' }],
+      links: [],
       scrapes: [
         {
           id: nanoid(),
@@ -564,6 +643,7 @@ watch(
 
 watch(isActive, () => {
   resizeAllElements()
+  scrollToActive()
 })
 
 const selectedPrompt = ref<string | null>(localStorage.getItem('selectPrompt') ?? null)
@@ -739,7 +819,7 @@ function addPrompt() {
         selector: '.contents',
         loading: false,
         fetchOnShare: false,
-        clipHard: false,
+        clipHard: true,
         clipLength: 2500,
       },
       {
@@ -749,7 +829,7 @@ function addPrompt() {
         selector: '.etymwb-entry',
         loading: false,
         fetchOnShare: false,
-        clipHard: false,
+        clipHard: true,
         clipLength: 2500,
       },
     ],
@@ -828,7 +908,7 @@ function addScrape() {
     name: '',
     loading: false,
     fetchOnShare: false,
-    clipHard: false,
+    clipHard: true,
     clipLength: 2500,
   })
 }
