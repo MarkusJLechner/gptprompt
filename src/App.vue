@@ -390,7 +390,7 @@
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { computed, nextTick, onActivated, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { nanoid } from 'nanoid'
 import InputClear from '@/components/InputClear.vue'
 import IconAdd from '@/components/IconAdd.vue'
@@ -453,30 +453,7 @@ onMounted(() => {
           }
         })
 
-        currentPrompt.value?.variables.forEach((to: any) => {
-          if (to.fetchOnShare) {
-            currentPrompt.value?.variables.forEach((from: any) => {
-              if (from.scrapeFrom) {
-                console.log({ to })
-                console.log({ from })
-
-                const foundScrape =
-                  currentPrompt.value?.scrapes.find((s: any) => s.fetchOnShare) ??
-                  currentPrompt.value?.scrapes[0]
-
-                const res = scrapeToVariable(foundScrape, from, to)
-
-                if (store.fetchSend) {
-                  nextTick(() => {
-                    res.then(() => {
-                      goto()
-                    })
-                  })
-                }
-              }
-            })
-          }
-        })
+        scrapeFromTo()
       })
     }
   })
@@ -490,6 +467,33 @@ onMounted(() => {
 
   renderedString.value = parseString()
 })
+
+function scrapeFromTo() {
+  currentPrompt.value?.variables.forEach((to: any) => {
+    if (to.fetchOnShare) {
+      currentPrompt.value?.variables.forEach((from: any) => {
+        if (from.scrapeFrom) {
+          console.log({ to })
+          console.log({ from })
+
+          const foundScrape =
+            currentPrompt.value?.scrapes.find((s: any) => s.fetchOnShare) ??
+            currentPrompt.value?.scrapes[0]
+
+          const res = scrapeToVariable(foundScrape, from, to)
+
+          if (store.fetchSend) {
+            nextTick(() => {
+              res.then(() => {
+                goto()
+              })
+            })
+          }
+        }
+      })
+    }
+  })
+}
 
 function grantPermission() {
   navigator.permissions
@@ -539,6 +543,8 @@ function removeShareHistory(indexOf) {
 
 function pasteShareHistory(index, variable) {
   variable.text = store.sharedHistory[index]
+
+  scrapeFromTo()
 }
 
 function deSelectAllScrapeFetchOnShare() {
