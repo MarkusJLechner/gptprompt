@@ -39,7 +39,29 @@ Kontext $2 "Kontext zum Wort ist: "$$"."`,
     },
 
     // DE
-    { name: 'de: Wort zu Satz', prompt: `Schreibe einen prompt mit $0`, note: '' },
+    {
+      name: 'de: Wort zu Satz',
+      prompt: `Ich gebe dir ein Wort und du machst einen Satz daraus. Schreibe einen Satz der das Wort gut veranschaulicht ist einfach erlernen lässt. Nachdem du den Satz geschrieben hast, schreibe darunter eine japanische Beschreibung über die Satzbausteine.
+Wort: "$0"
+Kontext: "$1"`,
+      note: '',
+    },
+    {
+      name: 'de: Wort zu Anwortseite',
+      prompt: `Ich bin Japaner und will deutsch lernen. Ich gebe dir ein deutsches Wort und du machst daraus eine Antwortseite einer Flashcard.
+Wenn das Wort ein Verb ist, konjugiere es, bei einem Nomen schreibe den Artikel dazu.
+Wort: "$0".
+Kontext: "$1".
+Verwende dabei folgendes Format:
+**単語：** [DEUTSCHES WORT MIT KONJUKTION (ich, du, er sie es) ODER ARTIKEL (der, die, das)]
+**意味：** [BEDEUTUNGEN DES WORTES IN JAPANISCHER SPRACHE]
+**対義語：** [GEGENWORT]
+**例：**
+ * [1-3 SÄTZE MIT JAPANISCHER ÜBERSETZUNGEN]
+**象徴：**
+[BILDLICHE DARSTELLUNG IN JAPANISCH]`,
+      note: '',
+    },
   ],
 
   scrapes: [
@@ -67,8 +89,17 @@ Kontext $2 "Kontext zum Wort ist: "$$"."`,
     // DE
     {
       url: 'https://www.dwds.de/wb/etymwb/$$/',
-      name: 'de: wörterbuch',
+      name: 'de: dwds',
       selector: '.etymwb-entry',
+      loading: false,
+      fetchOnShare: true,
+      clipHard: true,
+      clipLength: 2500,
+    },
+    {
+      url: 'https://de.pons.com/%C3%BCbersetzung/deutsch-als-fremdsprache/$$',
+      name: 'de: pons',
+      selector: '#de .results',
       loading: false,
       fetchOnShare: true,
       clipHard: true,

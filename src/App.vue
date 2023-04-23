@@ -80,37 +80,59 @@
       <section class="col-span-12 flex-1">
         <header class="my-2">Prompts</header>
 
-        <div v-for="(prompt, index) in predefinedData.prompts" class="mt-4" :key="index">
-          <div class="font-bold flex items-center bg-gray-700 px-2">
-            <div class="flex-1">{{ prompt.name }}</div>
-            <button
-              class="button py-1 px-2 flex justify-center bg-transparent shadow-none m-0"
-              @click="addDefinedPrompt(prompt)"
+        <input-clear
+          v-model="inputSearchListPrompt"
+          @click="clickFocus"
+          placeholder="Search"
+          class="mt-1 flex-1 h-10"
+        />
+
+        <div class="mt-4 overflow-y-auto max-h-[400px]">
+          <div v-for="(prompt, index) in filteredPredefinedDataPrompts" class="mb-4" :key="index">
+            <div class="font-bold flex items-center bg-gray-700 rounded-t-lg px-2">
+              <div class="flex-1">{{ prompt.name }}</div>
+              <button
+                class="button py-1 px-2 flex justify-center bg-transparent shadow-none m-0"
+                @click="addDefinedPrompt(prompt)"
+              >
+                <icon-copy width="25px" />
+              </button>
+            </div>
+            <div
+              class="shadow-inner bg-gray-900 rounded-b-lg p-2 text-gray-400 whitespace-pre-wrap max-h-32 overflow-y-auto"
             >
-              <icon-copy width="25px" />
-            </button>
+              {{ prompt.prompt }}
+            </div>
+            <div class="text-sm mt-2 pl-2 text-gray-400 whitespace-pre-wrap">{{ prompt.note }}</div>
           </div>
-          <div class="text-gray-400 mt-2 whitespace-pre-wrap max-h-32 overflow-y-auto">
-            {{ prompt.prompt }}
-          </div>
-          <div class="pl-3 text-sm mt-2 text-gray-500 whitespace-pre-wrap">{{ prompt.note }}</div>
         </div>
       </section>
       <section class="col-span-12">
         <header class="my-2">Scrapes</header>
 
-        <div v-for="(scrape, index) in predefinedData.scrapes" class="mt-4" :key="index">
-          <div class="font-bold flex items-center bg-gray-700 px-2">
-            <div class="flex-1">{{ scrape.name }}</div>
-            <button
-              class="button py-1 px-2 flex justify-center bg-transparent shadow-none m-0"
-              @click="addDefinedScrape(scrape)"
-            >
-              <icon-add width="25px" />
-            </button>
+        <input-clear
+          v-model="inputSearchListScrape"
+          @click="clickFocus"
+          placeholder="Search"
+          class="mt-1 flex-1 h-10"
+        />
+
+        <div class="mt-4 overflow-y-auto max-h-[400px]">
+          <div v-for="(scrape, index) in filteredPredefinedDataScrapes" class="mb-4" :key="index">
+            <div class="font-bold flex items-center bg-gray-700 rounded-t-lg px-2">
+              <div class="flex-1">{{ scrape.name }}</div>
+              <button
+                class="button py-1 px-2 flex justify-center bg-transparent shadow-none m-0"
+                @click="addDefinedScrape(scrape)"
+              >
+                <icon-add width="25px" />
+              </button>
+            </div>
+            <div class="bg-gray-900 p-2 rounded-b-lg">
+              <div class="text-gray-400 text-sm">{{ scrape.url }}</div>
+              <div class="text-sm mt-2 text-gray-500">{{ scrape.selector }}</div>
+            </div>
           </div>
-          <div class="text-gray-400 mt-2 text-sm">{{ scrape.url }}</div>
-          <div class="text-sm mt-2 text-gray-500">{{ scrape.selector }}</div>
         </div>
       </section>
     </main>
@@ -505,6 +527,8 @@ function switchToList() {
 }
 
 let inputSearch = ref('')
+let inputSearchListPrompt = ref('')
+let inputSearchListScrape = ref('')
 const refInputName = ref(null)
 
 let inputSetStore = ref('')
@@ -989,6 +1013,17 @@ const filteredStore = computed(() => {
   return store.prompts
     .filter((p: any) => p.name.toLowerCase().includes(inputSearch.value.toLowerCase()))
     .sort((a, b) => (b.copied ?? 0) - (a.copied ?? 0))
+})
+
+const filteredPredefinedDataPrompts = computed(() => {
+  return predefinedData.prompts
+    .filter((p: any) => p.name.toLowerCase().includes(inputSearchListPrompt.value.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name))
+})
+const filteredPredefinedDataScrapes = computed(() => {
+  return predefinedData.scrapes
+    .filter((p: any) => p.name.toLowerCase().includes(inputSearchListScrape.value.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name))
 })
 
 const anyLoading = computed(() => {
