@@ -52,6 +52,14 @@
             {{ prompt.name || '-' }}
           </button>
 
+          <button
+            v-if="isEditMode"
+            class="button px-2 bg-green-900"
+            @click="duplicatePrompt(prompt.id)"
+          >
+            <icon-copy width="25px" />
+          </button>
+
           <button v-if="isEditMode" class="button px-2 bg-red-900" @click="deletePrompt(prompt.id)">
             <icon-delete width="25px" />
           </button>
@@ -355,15 +363,26 @@
           </button>
         </section>
 
+        <section v-if="isEditMode">
+          <hr class="mt-4 border-gray-600" />
+
+          <small>Prompt copied x times</small>
+          <input-clear
+            v-model="inputCopied"
+            type="number"
+            placeholder="Copied"
+            class="flex-1 h-10"
+          />
+        </section>
+
         <section class="block mt-16" v-if="isEditMode">
           <hr class="mt-6 mb-6 border-gray-600" />
           <input-checkbox v-model="store.fetchSend">send after fetch</input-checkbox>
 
-          <hr class="mt-6 mb-2 border-gray-600" />
-          <hr class="mt-0 border-gray-600" />
+          <hr class="my-6 border-gray-600" />
 
           <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="backupStore">
-            Get store
+            Backup prompts
           </button>
 
           <div class="flex gap-3">
@@ -379,19 +398,18 @@
               :class="{ 'bg-transparent text-gray-700': !inputSetStore }"
               @click="setStore"
             >
-              Set store
+              Set prompts
             </button>
           </div>
-        </section>
 
-        <section v-if="isEditMode">
-          <hr class="mt-4 border-gray-600" />
-          <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
-            Save to file
-          </button>
-          <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
-            Load from file
-          </button>
+          <div class="flex gap-2 mt-2">
+            <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
+              Save to file
+            </button>
+            <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
+              Load from file
+            </button>
+          </div>
         </section>
       </section>
     </section>
@@ -421,6 +439,11 @@ const maxShareHistory = 6
 let inputSearch = ref('')
 
 let inputSetStore = ref('')
+
+const inputCopied = computed({
+  get: () => '' + currentPrompt.value.copied,
+  set: (value) => (currentPrompt.value.copied = typeof value === 'number' ? '' + value : '0'),
+})
 
 let renderedString = ref('')
 
@@ -495,6 +518,7 @@ async function loadFromFile() {
   try {
     const json = JSON.parse(contents)
     if (!json.prompts) {
+      // noinspection ExceptionCaughtLocallyJS
       throw Error('Json has no prompts')
     }
 
@@ -553,10 +577,8 @@ async function verifyPermission(fileHandle) {
   if ((await fileHandle.queryPermission(options)) === 'granted') {
     return true
   }
-  if ((await fileHandle.requestPermission(options)) === 'granted') {
-    return true
-  }
-  return false
+
+  return (await fileHandle.requestPermission(options)) === 'granted'
 }
 
 function scrapeFromTo() {
@@ -759,6 +781,11 @@ function selectPrompt(id: string) {
 function copy() {
   const string = parseString()
   copyToClipboard(string)
+
+  if (currentPrompt.value) {
+    currentPrompt.value.copied ??= 0
+    currentPrompt.value.copied = +currentPrompt.value.copied + 1
+  }
   return string
 }
 
@@ -869,9 +896,9 @@ function copyToClipboard(str: string) {
 }
 
 const filteredStore = computed(() => {
-  return store.prompts.filter((p: any) =>
-    p.name.toLowerCase().includes(inputSearch.value.toLowerCase()),
-  )
+  return store.prompts
+    .filter((p: any) => p.name.toLowerCase().includes(inputSearch.value.toLowerCase()))
+    .sort((a, b) => (b.copied ?? 0) - (a.copied ?? 0))
 })
 
 const anyLoading = computed(() => {
@@ -960,6 +987,12 @@ function deletePrompt(index: string) {
   } else {
     selectPrompt('')
   }
+}
+
+function duplicatePrompt(index: string) {
+  const copied = JSON.parse(JSON.stringify(store.prompts.find((p) => p.id === index)))
+  copied.id = nanoid()
+  store.prompts.push(copied)
 }
 
 function addVariable() {
