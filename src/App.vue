@@ -74,6 +74,48 @@
     </section>
 
     <main
+      v-if="listView"
+      class="col-span-12 auto-rows-max text-white min-h-full min-w-full gap-4 grid grid-cols-12 md:flex-row"
+    >
+      <section class="col-span-12 flex-1">
+        <header class="my-2">Prompts</header>
+
+        <div v-for="(prompt, index) in predefinedData.prompts" class="mt-4" :key="index">
+          <div class="font-bold flex items-center bg-gray-700 px-2">
+            <div class="flex-1">{{ prompt.name }}</div>
+            <button
+              class="button py-1 px-2 flex justify-center bg-transparent shadow-none m-0"
+              @click="addDefinedPrompt(prompt)"
+            >
+              <icon-copy width="25px" />
+            </button>
+          </div>
+          <div class="text-gray-400 mt-2 whitespace-pre-wrap max-h-32 overflow-y-auto">
+            {{ prompt.prompt }}
+          </div>
+          <div class="pl-3 text-sm mt-2 text-gray-500 whitespace-pre-wrap">{{ prompt.note }}</div>
+        </div>
+      </section>
+      <section class="col-span-12">
+        <header class="my-2">Scrapes</header>
+
+        <div v-for="(scrape, index) in predefinedData.scrapes" class="mt-4" :key="index">
+          <div class="font-bold flex items-center bg-gray-700 px-2">
+            <div class="flex-1">{{ scrape.name }}</div>
+            <button
+              class="button py-1 px-2 flex justify-center bg-transparent shadow-none m-0"
+              @click="addDefinedScrape(scrape)"
+            >
+              <icon-add width="25px" />
+            </button>
+          </div>
+          <div class="text-gray-400 mt-2 text-sm">{{ scrape.url }}</div>
+          <div class="text-sm mt-2 text-gray-500">{{ scrape.selector }}</div>
+        </div>
+      </section>
+    </main>
+
+    <main
       v-if="!listView"
       class="col-span-12 auto-rows-max text-white min-h-full min-w-full gap-4 grid grid-cols-12 md:flex-row"
     >
@@ -452,6 +494,7 @@ import IconSend from '@/components/IconSend.vue'
 import IconArrow from '@/components/IconArrow.vue'
 import IconGrid from '@/components/IconGrid.vue'
 import IconCode from '@/components/IconCode.vue'
+import predefinedData from '@/predefinedData'
 
 const maxShareHistory = 6
 
@@ -528,6 +571,27 @@ onMounted(() => {
 
   renderedString.value = parseString()
 })
+
+function addDefinedPrompt(prompt) {
+  console.log(prompt)
+  currentPrompt.value.prompt = prompt.prompt
+}
+function addDefinedScrape(scrape) {
+  console.log(scrape)
+  if (!currentPrompt.value?.scrapes) {
+    currentPrompt.value.scrapes = []
+  }
+  currentPrompt.value?.scrapes.push({
+    id: nanoid(),
+    url: scrape.url,
+    name: scrape.name,
+    selector: scrape.selector,
+    loading: scrape.loading,
+    fetchOnShare: scrape.fetchOnShare,
+    clipHard: scrape.clipHard,
+    clipLength: scrape.clipLength,
+  })
+}
 
 async function saveToFile() {
   await verifyPermission(await getSaveHandle())
