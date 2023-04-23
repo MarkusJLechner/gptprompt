@@ -18,6 +18,10 @@
           <button class="button px-2 h-10 bg-green-800" @click="addPrompt">
             <icon-add width="25px" />
           </button>
+
+          <button class="button px-2 h-10 bg-cyan-800" @click="switchToList">
+            <component :is="listView ? IconCode : IconGrid" width="25px" />
+          </button>
         </div>
 
         <div
@@ -69,350 +73,363 @@
       <hr class="md:mr-3 mt-3 mb-0 border-gray-600" />
     </section>
 
-    <section v-if="currentPrompt" class="col-span-5 flex-1">
-      <header class="my-2 flex flex-col justify-between">
-        <section>
-          <div class="flex items-baseline">
-            <input-checkbox v-model="store.render" class="flex-1"
-              ><icon-eye fill="#374151" width="25px"
-            /></input-checkbox>
+    <main
+      v-if="!listView"
+      class="col-span-12 auto-rows-max text-white min-h-full min-w-full gap-4 grid grid-cols-12 md:flex-row"
+    >
+      <section v-if="currentPrompt" class="col-span-5 flex-1">
+        <header class="my-2 flex flex-col justify-between">
+          <section>
+            <div class="flex items-baseline">
+              <input-checkbox v-model="store.render" class="flex-1"
+                ><icon-eye fill="#374151" width="25px"
+              /></input-checkbox>
 
-            <input-checkbox v-model="store.editMode" class="flex-1"
-              ><icon-edit stroke="#374151" width="25px"
-            /></input-checkbox>
-          </div>
-        </section>
-      </header>
-
-      <input-clear
-        v-if="isEditMode"
-        v-model="currentPrompt.name"
-        placeholder="Name"
-        class="flex-1 mb-2"
-      />
-
-      <input-clear
-        v-if="isEditMode"
-        v-model="currentPrompt.reuseChat"
-        placeholder="chat url"
-        class="flex-1 mb-2"
-      />
-
-      <input-text-area
-        placeholder="Prompt text"
-        v-model="currentPrompt.prompt"
-        :clear="false"
-        v-if="isEditMode"
-      />
-
-      <div class="flex justify-between gap-4 mt-4">
-        <button class="button flex-1 flex justify-center bg-blue-700" @click="copy">
-          <icon-copy width="25px" />
-        </button>
-        <button class="button flex-1 flex justify-center bg-blue-700" @click="goto">
-          <icon-send v-if="!anyLoading" width="25px" />
-          <icon-spinner v-if="anyLoading" width="25px" class="animate-spin" />
-        </button>
-      </div>
-
-      <div
-        v-if="store.render"
-        class="mt-3 break-words text-sm text-gray-200 p-3 bg-gray-900 rounded shadow whitespace-pre-wrap"
-      >
-        {{ renderedString }}
-      </div>
-
-      <section class="mt-12">
-        <header class="my-2">Shared history</header>
-        <div
-          class="bg-slate-900 mb-2 rounded-md p-2"
-          :key="index"
-          v-for="(history, index) in store.sharedHistory"
-        >
-          <div class="flex">
-            <div class="truncate flex-1 text-ellipsis whitespace-nowrap block">
-              {{ history || '-empty-' }}
+              <input-checkbox v-model="store.editMode" class="flex-1"
+                ><icon-edit stroke="#374151" width="25px"
+              /></input-checkbox>
             </div>
-            <button class="p-2 bg-slate-800 rounded-lg" @click="removeShareHistory(index)">
-              <icon-delete class="h-3" />
-            </button>
-          </div>
+          </section>
+        </header>
 
-          <div class="flex flex-wrap gap-2 mt-2">
-            <div :key="vIndex" v-for="(fromVariable, vIndex) in currentPrompt.variables">
-              <button
-                class="button text-xs shadow-lg bg-gray-700 rounded-lg px-3 mb-1 py-[5px] flex"
-                @click="pasteShareHistory(index, fromVariable)"
-              >
-                {{ fromVariable.name }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </section>
+        <input-clear
+          v-if="isEditMode"
+          v-model="currentPrompt.name"
+          placeholder="Name"
+          class="flex-1 mb-2"
+          ref="refInputName"
+        />
 
-    <section v-if="currentPrompt" class="col-span-7 flex-1 -mx-1">
-      <header class="my-2">Variables</header>
-      <div
-        class="bg-gray-900 rounded-lg p-3 mb-1"
-        :key="variable.id"
-        v-for="(variable, index) in currentPrompt.variables"
-      >
-        <div class="flex w-full gap-3 h-12 items-center mb-2">
-          <div class="flex w-full gap-3 h-12 items-center" v-if="isEditMode">
-            <input
-              class="input flex-0 mt-2"
-              type="text"
-              @dblclick="clickFocus"
-              v-model="variable.name"
-              placeholder="Name"
-            />
-            <span class="flex-1 flex items-center"> ${{ index }}</span
-            ><button class="button px-2 bg-red-900 m-0 -mt-1" @click="deleteVariable(variable.id)">
-              <icon-delete width="25px" />
-            </button>
-          </div>
-          <div class="text-white" v-if="!isEditMode">
-            {{ variable.name || '-' }}
-          </div>
-        </div>
-
-        <input-text-area
-          placeholder="variable"
-          v-model="variable.text"
-          :readonly="variable.readonly && !isEditMode"
-          :clear="!variable.readonly || isEditMode"
+        <input-clear
+          v-if="isEditMode"
+          v-model="currentPrompt.reuseChat"
+          placeholder="chat url"
+          class="flex-1 mb-2"
         />
 
         <input-text-area
-          placeholder="variable text"
-          v-model="variable.promptText"
+          placeholder="Prompt text"
+          v-model="currentPrompt.prompt"
+          :clear="false"
           v-if="isEditMode"
         />
 
-        <section>
-          <div class="grid grid-cols-2" v-if="isEditMode">
-            <span class="col-span-2">Scrape</span>
-            <input-checkbox v-model="variable.scrapeFrom">from</input-checkbox>
-            <input-checkbox v-model="variable.scrapeTo">to</input-checkbox>
-            <input-checkbox class="" v-model="variable.readonly">readonly</input-checkbox>
-            <input-checkbox class="" v-model="variable.shareTarget">shared</input-checkbox>
-            <input-checkbox class="" v-model="variable.fetchOnShare">fetch</input-checkbox>
-          </div>
+        <div class="flex justify-between gap-4 mt-4">
+          <button class="button flex-1 flex justify-center bg-blue-700" @click="copy">
+            <icon-copy width="25px" />
+          </button>
+          <button class="button flex-1 flex justify-center bg-blue-700" @click="goto">
+            <icon-send v-if="!anyLoading" width="25px" />
+            <icon-spinner v-if="anyLoading" width="25px" class="animate-spin" />
+          </button>
+        </div>
 
-          <div v-if="!isEditMode && variable.scrapeTo">
-            <div :key="fromVariable.id" v-for="fromVariable in currentPrompt.variables">
-              <div v-if="fromVariable.scrapeFrom">
-                <div
-                  class="flex items-baseline mb-2"
-                  :key="scrape.id"
-                  v-for="(scrape, scrapeIndex) in currentPrompt.scrapes"
+        <div
+          v-if="store.render"
+          class="mt-3 break-words text-sm text-gray-200 p-3 bg-gray-900 rounded shadow whitespace-pre-wrap"
+        >
+          {{ renderedString }}
+        </div>
+
+        <section class="mt-12">
+          <header class="my-2">Shared history</header>
+          <div
+            class="bg-slate-900 mb-2 rounded-md p-2"
+            :key="index"
+            v-for="(history, index) in store.sharedHistory"
+          >
+            <div class="flex">
+              <div class="truncate flex-1 text-ellipsis whitespace-nowrap block">
+                {{ history || '-empty-' }}
+              </div>
+              <button class="p-2 bg-slate-800 rounded-lg" @click="removeShareHistory(index)">
+                <icon-delete class="h-3" />
+              </button>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mt-2">
+              <div :key="vIndex" v-for="(fromVariable, vIndex) in currentPrompt.variables">
+                <button
+                  class="button text-xs shadow-lg bg-gray-700 rounded-lg px-3 mb-1 py-[5px] flex"
+                  @click="pasteShareHistory(index, fromVariable)"
                 >
-                  <span class="text-gray-400 text-sm mr-2">
-                    <span class="text-white">{{ fromVariable.name }}</span>
-                  </span>
-                  <span class="text-gray-600 mx-1">►</span>
-                  <span class="text-white">{{ scrape.name || 'noname ' + scrapeIndex }}</span>
-                  <span class="text-gray-600 mx-1">►</span>
-
-                  <button
-                    class="button text-xs shadow-lg bg-gray-700 rounded-lg p-3 mb-1 py-[3px] flex"
-                    :class="{ loading: !!scrape.loading }"
-                    v-if="fromVariable.id !== variable.id"
-                    @click="scrapeToVariable(scrape, fromVariable, variable)"
-                  >
-                    fetch
-                    <icon-spinner v-if="!!scrape.loading" class="ml-2 animate-spin" width="20px" />
-                  </button>
-                </div>
+                  {{ fromVariable.name }}
+                </button>
               </div>
             </div>
           </div>
         </section>
-      </div>
-
-      <button v-if="isEditMode" class="button px-2 bg-green-700 mt-4" @click="addVariable">
-        <icon-add width="25px" />
-      </button>
-
-      <section>
-        <section v-if="!!currentPrompt.links?.length">
-          <hr class="mt-6 border-gray-600" />
-          <header class="my-2">Links</header>
-
-          <div
-            class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center gap-3"
-            :key="link.id"
-            v-for="(link, indexLink) in currentPrompt.links"
-          >
-            <span>{{ link.name || 'noname ' + indexLink }}:</span>
-            <button
-              class="button bg-gray-700 rounded-lg p-3 mb-1 py-[7px]"
-              :key="variable.id"
-              v-for="(variable, index) in currentPrompt.variables"
-              @click="gotoLink(link, variable)"
-            >
-              {{ variable.name || 'var' + index }} - ${{ index }}
-            </button>
-          </div>
-
-          <hr class="mr-3" />
-        </section>
-
-        <section v-if="isEditMode">
-          <hr class="mt-6 border-gray-600" />
-          <header class="my-3">Links edit</header>
-          <div
-            class="bg-gray-900 rounded-lg p-3 mb-1"
-            :key="link.id"
-            v-for="link in currentPrompt.links"
-          >
-            <div class="flex gap-3">
-              <input
-                class="input"
-                type="text"
-                @dblclick="clickFocus"
-                v-model="link.name"
-                placeholder="Name"
-              />
-
-              <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteLink(link.id)">
-                <icon-delete width="25px" />
-              </button>
-            </div>
-
-            <input
-              class="input"
-              type="text"
-              @dblclick="clickFocus"
-              v-model="link.url"
-              placeholder="eg: https://dic.com/?w=$$"
-            />
-          </div>
-
-          <button class="button px-2 bg-green-700 mt-4" @click="addLink">
-            <icon-add width="25px" />
-          </button>
-        </section>
       </section>
 
-      <section class="">
-        <section v-if="isEditMode">
-          <hr class="mt-6 border-gray-600" />
-          <header class="my-3">Scrape edit</header>
-          <div
-            class="bg-gray-900 rounded-lg p-3 mb-1"
-            :key="scrape.id"
-            v-for="scrape in currentPrompt.scrapes"
-          >
-            <div class="flex gap-3">
+      <section v-if="currentPrompt" class="col-span-7 flex-1 -mx-1">
+        <header class="my-2">Variables</header>
+        <div
+          class="bg-gray-900 rounded-lg p-3 mb-1"
+          :key="variable.id"
+          v-for="(variable, index) in currentPrompt.variables"
+        >
+          <div class="flex w-full gap-3 h-12 items-center mb-2">
+            <div class="flex w-full gap-3 h-12 items-center" v-if="isEditMode">
+              <input
+                class="input flex-0 mt-2"
+                type="text"
+                @dblclick="clickFocus"
+                v-model="variable.name"
+                placeholder="Name"
+              />
+              <span class="flex-1 flex items-center"> ${{ index }}</span
+              ><button
+                class="button px-2 bg-red-900 m-0 -mt-1"
+                @click="deleteVariable(variable.id)"
+              >
+                <icon-delete width="25px" />
+              </button>
+            </div>
+            <div class="text-white" v-if="!isEditMode">
+              {{ variable.name || '-' }}
+            </div>
+          </div>
+
+          <input-text-area
+            placeholder="variable"
+            v-model="variable.text"
+            :readonly="variable.readonly && !isEditMode"
+            :clear="!variable.readonly || isEditMode"
+          />
+
+          <input-text-area
+            placeholder="variable text"
+            v-model="variable.promptText"
+            v-if="isEditMode"
+          />
+
+          <section>
+            <div class="grid grid-cols-2" v-if="isEditMode">
+              <span class="col-span-2">Scrape</span>
+              <input-checkbox v-model="variable.scrapeFrom">from</input-checkbox>
+              <input-checkbox v-model="variable.scrapeTo">to</input-checkbox>
+              <input-checkbox class="" v-model="variable.readonly">readonly</input-checkbox>
+              <input-checkbox class="" v-model="variable.shareTarget">shared</input-checkbox>
+              <input-checkbox class="" v-model="variable.fetchOnShare">fetch</input-checkbox>
+            </div>
+
+            <div v-if="!isEditMode && variable.scrapeTo">
+              <div :key="fromVariable.id" v-for="fromVariable in currentPrompt.variables">
+                <div v-if="fromVariable.scrapeFrom">
+                  <div
+                    class="flex items-baseline mb-2"
+                    :key="scrape.id"
+                    v-for="(scrape, scrapeIndex) in currentPrompt.scrapes"
+                  >
+                    <span class="text-gray-400 text-sm mr-2">
+                      <span class="text-white">{{ fromVariable.name }}</span>
+                    </span>
+                    <span class="text-gray-600 mx-1">►</span>
+                    <span class="text-white">{{ scrape.name || 'noname ' + scrapeIndex }}</span>
+                    <span class="text-gray-600 mx-1">►</span>
+
+                    <button
+                      class="button text-xs shadow-lg bg-gray-700 rounded-lg p-3 mb-1 py-[3px] flex"
+                      :class="{ loading: !!scrape.loading }"
+                      v-if="fromVariable.id !== variable.id"
+                      @click="scrapeToVariable(scrape, fromVariable, variable)"
+                    >
+                      fetch
+                      <icon-spinner
+                        v-if="!!scrape.loading"
+                        class="ml-2 animate-spin"
+                        width="20px"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <button v-if="isEditMode" class="button px-2 bg-green-700 mt-4" @click="addVariable">
+          <icon-add width="25px" />
+        </button>
+
+        <section>
+          <section v-if="!!currentPrompt.links?.length">
+            <hr class="mt-6 border-gray-600" />
+            <header class="my-2">Links</header>
+
+            <div
+              class="bg-gray-900 rounded-lg p-3 mb-1 flex flex-wrap items-center gap-3"
+              :key="link.id"
+              v-for="(link, indexLink) in currentPrompt.links"
+            >
+              <span>{{ link.name || 'noname ' + indexLink }}:</span>
+              <button
+                class="button bg-gray-700 rounded-lg p-3 mb-1 py-[7px]"
+                :key="variable.id"
+                v-for="(variable, index) in currentPrompt.variables"
+                @click="gotoLink(link, variable)"
+              >
+                {{ variable.name || 'var' + index }} - ${{ index }}
+              </button>
+            </div>
+
+            <hr class="mr-3" />
+          </section>
+
+          <section v-if="isEditMode">
+            <hr class="mt-6 border-gray-600" />
+            <header class="my-3">Links edit</header>
+            <div
+              class="bg-gray-900 rounded-lg p-3 mb-1"
+              :key="link.id"
+              v-for="link in currentPrompt.links"
+            >
+              <div class="flex gap-3">
+                <input
+                  class="input"
+                  type="text"
+                  @dblclick="clickFocus"
+                  v-model="link.name"
+                  placeholder="Name"
+                />
+
+                <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteLink(link.id)">
+                  <icon-delete width="25px" />
+                </button>
+              </div>
+
               <input
                 class="input"
                 type="text"
                 @dblclick="clickFocus"
-                v-model="scrape.name"
-                placeholder="Name"
+                v-model="link.url"
+                placeholder="eg: https://dic.com/?w=$$"
               />
-
-              <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteScrape(scrape.id)">
-                <icon-delete width="25px" />
-              </button>
             </div>
 
-            <input
-              class="input"
-              type="text"
-              @dblclick="clickFocus"
-              v-model="scrape.url"
-              placeholder="eg: https://dic.com/?w=$$"
-            />
+            <button class="button px-2 bg-green-700 mt-4" @click="addLink">
+              <icon-add width="25px" />
+            </button>
+          </section>
+        </section>
 
-            <input
-              class="input"
-              type="text"
-              @dblclick="clickFocus"
-              v-model="scrape.selector"
-              placeholder="Selector"
-            />
+        <section class="">
+          <section v-if="isEditMode">
+            <hr class="mt-6 border-gray-600" />
+            <header class="my-3">Scrape edit</header>
+            <div
+              class="bg-gray-900 rounded-lg p-3 mb-1"
+              :key="scrape.id"
+              v-for="scrape in currentPrompt.scrapes"
+            >
+              <div class="flex gap-3">
+                <input
+                  class="input"
+                  type="text"
+                  @dblclick="clickFocus"
+                  v-model="scrape.name"
+                  placeholder="Name"
+                />
 
-            <div class="flex align-baseline-center">
+                <button class="button px-2 bg-red-900 h-11 m-0" @click="deleteScrape(scrape.id)">
+                  <icon-delete width="25px" />
+                </button>
+              </div>
+
               <input
-                class="input mr-2 col-span-1"
-                type="number"
+                class="input"
+                type="text"
                 @dblclick="clickFocus"
-                v-model="scrape.clipLength"
-                placeholder="Clip after Char"
+                v-model="scrape.url"
+                placeholder="eg: https://dic.com/?w=$$"
               />
 
-              <input-checkbox class="h-10 col-span-1" v-model="scrape.clipHard"
-                >Clip hard</input-checkbox
+              <input
+                class="input"
+                type="text"
+                @dblclick="clickFocus"
+                v-model="scrape.selector"
+                placeholder="Selector"
+              />
+
+              <div class="flex align-baseline-center">
+                <input
+                  class="input mr-2 col-span-1"
+                  type="number"
+                  @dblclick="clickFocus"
+                  v-model="scrape.clipLength"
+                  placeholder="Clip after Char"
+                />
+
+                <input-checkbox class="h-10 col-span-1" v-model="scrape.clipHard"
+                  >cut</input-checkbox
+                >
+              </div>
+
+              <input-checkbox
+                class="h-10"
+                v-model="scrape.fetchOnShare"
+                @click="deSelectAllScrapeFetchOnShare"
+                >auto fetch</input-checkbox
               >
             </div>
 
-            <input-checkbox
-              class="h-10"
-              v-model="scrape.fetchOnShare"
-              @click="deSelectAllScrapeFetchOnShare"
-              >auto fetch</input-checkbox
-            >
-          </div>
+            <button class="button px-2 bg-green-700 mt-4" @click="addScrape">
+              <icon-add width="25px" />
+            </button>
+          </section>
 
-          <button class="button px-2 bg-green-700 mt-4" @click="addScrape">
-            <icon-add width="25px" />
-          </button>
-        </section>
+          <section v-if="isEditMode">
+            <hr class="mt-4 border-gray-600" />
 
-        <section v-if="isEditMode">
-          <hr class="mt-4 border-gray-600" />
-
-          <small>Prompt copied x times</small>
-          <input-clear
-            v-model="inputCopied"
-            type="number"
-            placeholder="Copied"
-            class="flex-1 h-10"
-          />
-        </section>
-
-        <section class="block mt-16" v-if="isEditMode">
-          <hr class="mt-6 mb-6 border-gray-600" />
-          <input-checkbox v-model="store.fetchSend">send after fetch</input-checkbox>
-
-          <hr class="my-6 border-gray-600" />
-
-          <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="backupStore">
-            Backup prompts
-          </button>
-
-          <div class="flex gap-3">
-            <input
-              class="input flex-1"
-              type="text"
-              @dblclick="clickFocus"
-              v-model="inputSetStore"
-              placeholder="Store object"
+            <small>Prompt copied x times</small>
+            <input-clear
+              v-model="inputCopied"
+              type="number"
+              placeholder="Copied"
+              class="flex-1 h-10"
             />
-            <button
-              class="flex-1 button px-2 bg-gray-700 text-gray-400"
-              :class="{ 'bg-transparent text-gray-700': !inputSetStore }"
-              @click="setStore"
-            >
-              Set prompts
-            </button>
-          </div>
+          </section>
 
-          <div class="flex gap-2 mt-2">
-            <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
-              Save to file
+          <section class="block mt-16" v-if="isEditMode">
+            <hr class="mt-6 mb-6 border-gray-600" />
+            <input-checkbox v-model="store.fetchSend">send after fetch</input-checkbox>
+
+            <hr class="my-6 border-gray-600" />
+
+            <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="backupStore">
+              Backup prompts
             </button>
-            <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
-              Load from file
-            </button>
-          </div>
+
+            <div class="flex gap-3">
+              <input
+                class="input flex-1"
+                type="text"
+                @dblclick="clickFocus"
+                v-model="inputSetStore"
+                placeholder="Store object"
+              />
+              <button
+                class="flex-1 button px-2 bg-gray-700 text-gray-400"
+                :class="{ 'bg-transparent text-gray-700': !inputSetStore }"
+                @click="setStore"
+              >
+                Set prompts
+              </button>
+            </div>
+
+            <div class="flex gap-2 mt-2">
+              <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
+                Save to file
+              </button>
+              <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
+                Load from file
+              </button>
+            </div>
+          </section>
         </section>
       </section>
-    </section>
+    </main>
 
     <RouterView />
   </div>
@@ -433,10 +450,19 @@ import InputTextArea from '@/components/InputTextArea.vue'
 import IconSpinner from '@/components/IconSpinner.vue'
 import IconSend from '@/components/IconSend.vue'
 import IconArrow from '@/components/IconArrow.vue'
+import IconGrid from '@/components/IconGrid.vue'
+import IconCode from '@/components/IconCode.vue'
 
 const maxShareHistory = 6
 
+let listView = ref(false)
+
+function switchToList() {
+  listView.value = !listView.value
+}
+
 let inputSearch = ref('')
+const refInputName = ref(null)
 
 let inputSetStore = ref('')
 
@@ -965,13 +991,21 @@ function addPrompt() {
   store.editMode = true
 
   scrollToActive()
+
+  focusInputName()
+}
+
+function focusInputName() {
+  setTimeout(() => {
+    refInputName.value?.$el.querySelector('input').focus()
+  }, 200)
 }
 
 function scrollToActive() {
   nextTick(() => {
     if (refLi.value && selectedPrompt.value) {
       refLi.value[selectedPrompt.value]?.scrollIntoView({
-        behavior: 'smooth',
+        behavior: 'auto',
         block: 'end',
         inline: 'nearest',
       })
@@ -993,6 +1027,10 @@ function duplicatePrompt(index: string) {
   const copied = JSON.parse(JSON.stringify(store.prompts.find((p) => p.id === index)))
   copied.id = nanoid()
   store.prompts.push(copied)
+
+  selectPrompt(copied.id)
+  scrollToActive()
+  focusInputName()
 }
 
 function addVariable() {

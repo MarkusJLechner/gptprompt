@@ -4,6 +4,7 @@
       v-bind="$attrs"
       class="w-full py-2 pl-3 pr-3 bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-blue-500 focus:border-blue-500 leading-tight border rounded-md shadow-sm"
       type="text"
+      ref="refInput"
       v-model="input"
     />
     <div class="absolute inset-y-0 h-10 pt-1 right-0 flex items-center">
@@ -25,16 +26,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
-  modelValue: String
+  modelValue: String,
 })
+
+const refInput = ref(null)
 
 const input = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 </script>
 
