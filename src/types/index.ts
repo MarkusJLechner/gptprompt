@@ -33,6 +33,7 @@ export interface Prompt {
   name: string
   prompt: string
   variables: Variable[]
+  favorite?: boolean
   links?: Link[]
   scrapes?: Scrape[]
   copiedAt?: string

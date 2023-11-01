@@ -578,7 +578,7 @@ const refInputClear = ref(null)
 
 const inputCopied = computed({
   get: () => '' + currentPrompt.value.copied,
-  set: (value) => (currentPrompt.value.copied = typeof value === 'number' ? '' + value : '0'),
+  set: (value) => (currentPrompt.value.copied = +(typeof value === 'number' ? '' + value : '0')),
 })
 
 let renderedString = ref('')
