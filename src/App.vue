@@ -185,7 +185,7 @@
           v-if="isEditMode"
         />
 
-        <div class="flex justify-between gap-4 mt-4">
+        <div class="flex justify-between gap-4 mt-4 hidden">
           <button class="button flex-1 flex justify-center bg-blue-700" @click="copy">
             <icon-copy width="25px" />
           </button>
@@ -503,20 +503,25 @@
   <!--  float margin    -->
   <div class="h-[90px] w-full"></div>
 
-  <div class="w-full h-[60px] fixed bottom-0 backdrop-blur-lg shadow-t flex p-2">
-    <div class="flex flex-1 gap-4 h-full">
-      <button class="button bg-blue-700/25 mb-0" @click="toggleSearch">
-        <icon-magnifying width="25px" />
-      </button>
+  <div class="w-full h-[60px] flex-col fixed bottom-0 backdrop-blur-sm shadow-t flex p-2">
+    <div class="absolute -mt-8 text-white text-sm" style="text-shadow: #000 1px 0 10px">
+      {{ currentPrompt?.name ?? 'none' }}
     </div>
-    <div class="flex flex-1 justify-end gap-4 h-full" v-if="currentPrompt">
-      <button class="button bg-blue-700 mb-0" @click="copy">
-        <icon-copy width="25px" />
-      </button>
-      <button class="button bg-blue-700 mb-0" @click="goto">
-        <icon-send v-if="!anyLoading" width="25px" />
-        <icon-spinner v-if="anyLoading" width="25px" class="animate-spin" />
-      </button>
+    <div class="flex w-full">
+      <div class="flex flex-1 gap-4 h-full">
+        <button class="button bg-blue-700/25 mb-0" @click="toggleSearch">
+          <icon-magnifying width="25px" />
+        </button>
+      </div>
+      <div class="flex flex-1 justify-end gap-4 h-full" v-if="currentPrompt">
+        <button class="button bg-blue-700 mb-0" @click="copy">
+          <icon-copy width="25px" />
+        </button>
+        <button class="button bg-blue-700 mb-0" @click="goto">
+          <icon-send v-if="!anyLoading" width="25px" />
+          <icon-spinner v-if="anyLoading" width="25px" class="animate-spin" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -640,6 +645,11 @@ onMounted(() => {
 })
 
 function toggleSearch() {
+  if (store.showSearch && !refInputClear.value.isFocused()) {
+    refInputClear.value.focus()
+    return
+  }
+
   store.showSearch = !store.showSearch
 
   if (store.showSearch) {

@@ -6,6 +6,8 @@
       type="text"
       ref="refInput"
       v-model="input"
+      @blur="onBlur()"
+      @focus="isFocusedInput = true"
       @keydown.enter="blur()"
     />
     <div class="absolute inset-y-0 h-10 pt-1 right-0 flex items-center">
@@ -47,6 +49,18 @@ function focus() {
     refInput.value.select()
   }, 30)
 }
+
+let isFocusedInput = ref(false)
+function onBlur() {
+  setTimeout(() => {
+    isFocusedInput.value = false
+  }, 200)
+}
+
+function isFocused() {
+  return isFocusedInput.value
+}
+
 function blur() {
   setTimeout(() => {
     refInput.value.blur()
@@ -55,6 +69,7 @@ function blur() {
 
 defineExpose({
   focus,
+  isFocused,
 })
 </script>
 
