@@ -1034,7 +1034,7 @@ const anyLoading = computed(() => {
 
 function addPrompt() {
   const newId = nanoid()
-  const prompt: any = {
+  const prompt: Prompt = {
     id: newId,
     reuseChat: '',
     name: '',
@@ -1048,6 +1048,8 @@ function addPrompt() {
         scrapeFrom: true,
         shareTarget: true,
         scrapeTo: false,
+        readonly: false,
+        fetchOnShare: false,
       },
       {
         id: nanoid(),
