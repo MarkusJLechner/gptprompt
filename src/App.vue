@@ -8,8 +8,9 @@
           <icon-arrow :class="{ 'rotate-90': store.showSearch }" width="25px" />
         </button>
 
-        <div v-if="store.showSearch" class="flex flex-1 gap-3">
+        <div v-show="store.showSearch" class="flex flex-1 gap-3">
           <input-clear
+            ref="refInputClear"
             v-model="inputSearch"
             @click="clickFocus"
             placeholder="Search"
@@ -51,8 +52,14 @@
               'bg-gray-600': selectedPrompt !== prompt.id,
             }"
             @click="selectPrompt(prompt.id)"
-            class="flex-1 button"
+            class="flex-1 button text-left"
           >
+            <icon-star
+              :fill="prompt.favorite ? '#fdec3d' : '#fff'"
+              class="-ml-2 -mt-3 -mb-2 p-1 mr-1 h-8 inline"
+              @click.prevent.stop="onFavorite(prompt.id)"
+            />
+
             {{ prompt.name || '-' }}
           </button>
 
@@ -340,6 +347,11 @@
             <hr class="mr-3" />
           </section>
 
+          <section class="text-sm mt-3 text-gray-400">
+            <div>Clicked {{ currentPrompt.copied }}</div>
+            <div>Last copied {{ formatDate(currentPrompt.copiedAt) }}</div>
+          </section>
+
           <section v-if="isEditMode">
             <hr class="mt-6 border-gray-600" />
             <header class="my-3">Links edit</header>
@@ -481,15 +493,6 @@
                 Set prompts
               </button>
             </div>
-
-            <div class="flex gap-2 mt-2">
-              <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="saveToFile">
-                Save to file
-              </button>
-              <button class="button px-2 w-full bg-gray-700 text-gray-400" @click="loadFromFile">
-                Load from file
-              </button>
-            </div>
           </section>
         </section>
       </section>
@@ -497,11 +500,46 @@
 
     <RouterView />
   </div>
+  <!--  float margin    -->
+  <div class="h-[90px] w-full"></div>
+
+  <div class="w-full h-[60px] fixed bottom-0 backdrop-blur-lg shadow-t flex p-2">
+    <div class="flex flex-1 gap-4 h-full">
+      <button class="button bg-blue-700/25 mb-0" @click="toggleSearch">
+        <icon-magnifying width="25px" />
+      </button>
+    </div>
+    <div class="flex flex-1 justify-end gap-4 h-full" v-if="currentPrompt">
+      <button class="button bg-blue-700 mb-0" @click="copy">
+        <icon-copy width="25px" />
+      </button>
+      <button class="button bg-blue-700 mb-0" @click="goto">
+        <icon-send v-if="!anyLoading" width="25px" />
+        <icon-spinner v-if="anyLoading" width="25px" class="animate-spin" />
+      </button>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.shadow-t {
+  box-shadow: 0 -4px 12px rgb(4 4 4 / 27%);
+}
+</style>
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import {
+  computed,
+  type ComputedRef,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  reactive,
+  type Ref,
+  ref,
+  watch,
+} from 'vue'
 import { nanoid } from 'nanoid'
 import InputClear from '@/components/InputClear.vue'
 import IconAdd from '@/components/IconAdd.vue'
@@ -517,6 +555,9 @@ import IconArrow from '@/components/IconArrow.vue'
 import IconGrid from '@/components/IconGrid.vue'
 import IconCode from '@/components/IconCode.vue'
 import predefinedData from '@/predefinedData'
+import IconStar from '@/components/IconStar.vue'
+import type { Prompt, Store } from '@/types'
+import IconMagnifying from '@/components/IconMagnifying.vue'
 
 const maxShareHistory = 6
 
@@ -532,6 +573,8 @@ let inputSearchListScrape = ref('')
 const refInputName = ref(null)
 
 let inputSetStore = ref('')
+
+const refInputClear = ref(null)
 
 const inputCopied = computed({
   get: () => '' + currentPrompt.value.copied,
@@ -596,6 +639,33 @@ onMounted(() => {
   renderedString.value = parseString()
 })
 
+function toggleSearch() {
+  store.showSearch = !store.showSearch
+
+  if (store.showSearch) {
+    refInputClear.value.focus()
+  }
+}
+
+function formatDate(isoDate) {
+  if (!isoDate) {
+    return '-'
+  }
+
+  try {
+    const date = new Date(isoDate)
+    const time = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+    const dateString = date.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+    return `${time} ${dateString}`
+  } catch (e) {
+    return '-'
+  }
+}
+
 function addDefinedPrompt(prompt) {
   console.log(prompt)
   currentPrompt.value.prompt = prompt.prompt
@@ -615,84 +685,6 @@ function addDefinedScrape(scrape) {
     clipHard: scrape.clipHard,
     clipLength: scrape.clipLength,
   })
-}
-
-async function saveToFile() {
-  await verifyPermission(await getSaveHandle())
-
-  await writeFile(await getSaveHandle(), localStorage.getItem('store') ?? '{}')
-}
-
-async function loadFromFile() {
-  await verifyPermission(await getOpenHandle())
-
-  const file = await (await getOpenHandle()).getFile()
-  const contents = await file.text()
-  console.log({ contents })
-  try {
-    const json = JSON.parse(contents)
-    if (!json.prompts) {
-      // noinspection ExceptionCaughtLocallyJS
-      throw Error('Json has no prompts')
-    }
-
-    localStorage.setItem('store', contents)
-  } catch (e) {
-    console.error('Failed parse')
-    console.error(e)
-  }
-}
-
-let fileSaveHandle = null
-async function getSaveHandle() {
-  if (fileSaveHandle) {
-    return fileSaveHandle
-  }
-
-  const date = new Date().toISOString().slice(0, 10)
-
-  const options = {
-    mode: 'readwrite',
-    suggestedName: `gptprompt-store-${date}.json`,
-    startIn: 'documents',
-    types: [
-      {
-        description: 'Store .json',
-        accept: {
-          'text/plain': ['.json'],
-        },
-      },
-    ],
-  }
-  fileSaveHandle = await (window as any).showSaveFilePicker(options)
-  return fileSaveHandle
-}
-
-let fileOpenHandle = null
-async function getOpenHandle() {
-  // if (fileOpenHandle) {
-  //   return fileOpenHandle
-  // }
-  const [fileHandle] = await (window as any).showOpenFilePicker({
-    startIn: 'documents',
-  })
-  fileOpenHandle = fileHandle
-  return fileOpenHandle
-}
-
-async function writeFile(fileHandle, contents) {
-  const writable = await fileHandle.createWritable()
-  await writable.write(contents)
-  await writable.close()
-}
-
-async function verifyPermission(fileHandle) {
-  const options = { mode: 'readwrite' }
-  if ((await fileHandle.queryPermission(options)) === 'granted') {
-    return true
-  }
-
-  return (await fileHandle.requestPermission(options)) === 'granted'
 }
 
 function scrapeFromTo() {
@@ -796,7 +788,7 @@ function resizeAllElements() {
   })
 }
 
-const currentPrompt = computed(() => {
+const currentPrompt: ComputedRef<Prompt | undefined> = computed(() => {
   return store.prompts.find((p: any) => p.id === selectedPrompt.value)
 })
 
@@ -804,7 +796,7 @@ const isEditMode = computed(() => {
   return store.editMode
 })
 
-const defaultStore = {
+const defaultStore: Store = {
   fetchSend: false,
   showSearch: true,
   flexRow: true,
@@ -858,7 +850,9 @@ const defaultStore = {
     },
   ],
 }
-const storageStore = JSON.parse(localStorage.getItem('store') ?? JSON.stringify(defaultStore))
+const storageStore: Store = JSON.parse(
+  localStorage.getItem('store') ?? JSON.stringify(defaultStore),
+)
 
 const store = reactive(storageStore)
 
@@ -879,7 +873,9 @@ watch(isActive, () => {
   scrollToActive()
 })
 
-const selectedPrompt = ref<string | null>(localStorage.getItem('selectPrompt') ?? null)
+const selectedPrompt: Ref<string | null> = ref<string | null>(
+  localStorage.getItem('selectPrompt') ?? null,
+)
 
 watch(selectedPrompt, () => {
   resizeAllElements()
@@ -895,6 +891,8 @@ function selectPrompt(id: string) {
 function copy() {
   const string = parseString()
   copyToClipboard(string)
+
+  currentPrompt.value.copiedAt = new Date().toISOString()
 
   if (currentPrompt.value) {
     currentPrompt.value.copied ??= 0
@@ -917,7 +915,7 @@ function gotoLink(link: any, variable: any) {
 }
 
 function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
-  const scrapeUrl = import.meta.env.VITE_SCRAPE
+  const scrapeUrl: string = import.meta.env.VITE_SCRAPE
   const url = scrape.url.replace('$$', fromVariable.text)
 
   console.log('Start scrape', { scrapeUrl, url })
@@ -1012,7 +1010,11 @@ function copyToClipboard(str: string) {
 const filteredStore = computed(() => {
   return store.prompts
     .filter((p: any) => p.name.toLowerCase().includes(inputSearch.value.toLowerCase()))
-    .sort((a, b) => (b.copied ?? 0) - (a.copied ?? 0))
+    .sort((a, b) => {
+      if (a.favorite && !b.favorite) return -1
+      if (!a.favorite && b.favorite) return 1
+      return (b.copied ?? 0) - (a.copied ?? 0)
+    })
 })
 
 const filteredPredefinedDataPrompts = computed(() => {
@@ -1032,7 +1034,7 @@ const anyLoading = computed(() => {
 
 function addPrompt() {
   const newId = nanoid()
-  store.prompts.push({
+  const prompt: Prompt = {
     id: newId,
     reuseChat: '',
     name: '',
@@ -1082,7 +1084,8 @@ function addPrompt() {
         clipLength: 2500,
       },
     ],
-  })
+  }
+  store.prompts.push(prompt)
   inputSearch.value = ''
 
   selectPrompt(newId)
@@ -1120,6 +1123,11 @@ function deletePrompt(index: string) {
   } else {
     selectPrompt('')
   }
+}
+
+function onFavorite(index: string) {
+  store.prompts.find((p) => p.id === index).favorite = !store.prompts.find((p) => p.id === index)
+    .favorite
 }
 
 function duplicatePrompt(index: string) {

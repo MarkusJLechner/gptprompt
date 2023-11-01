@@ -8,8 +8,8 @@
     },
     "lib": ["es2018", "dom"],
     "ignoreDeprecations": "5.0",
-    "strictNullChecks": false,
-    "noImplicitAny": false
+    "strictNullChecks": true,
+    "noImplicitAny": true
   },
 
   "references": [

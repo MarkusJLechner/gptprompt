@@ -6,6 +6,7 @@
       type="text"
       ref="refInput"
       v-model="input"
+      @keydown.enter="blur()"
     />
     <div class="absolute inset-y-0 h-10 pt-1 right-0 flex items-center">
       <button
@@ -38,6 +39,22 @@ const refInput = ref(null)
 const input = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
+})
+
+function focus() {
+  setTimeout(() => {
+    refInput.value.focus()
+    refInput.value.select()
+  }, 30)
+}
+function blur() {
+  setTimeout(() => {
+    refInput.value.blur()
+  }, 30)
+}
+
+defineExpose({
+  focus,
 })
 </script>
 
