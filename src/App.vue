@@ -1034,7 +1034,7 @@ const anyLoading = computed(() => {
 
 function addPrompt() {
   const newId = nanoid()
-  const prompt: Prompt = {
+  const prompt: any = {
     id: newId,
     reuseChat: '',
     name: '',
@@ -1178,6 +1178,7 @@ function addScrape() {
     currentPrompt.value.scrapes = []
   }
   currentPrompt.value?.scrapes.push({
+    selector: '',
     id: nanoid(),
     url: '',
     name: '',
