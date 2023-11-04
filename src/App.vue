@@ -3,7 +3,7 @@
     class="auto-rows-max text-white p-3 min-h-full min-w-full gap-4 grid grid-cols-12 md:flex-row pt-5 pb-24"
   >
     <section class="col-span-12">
-      <div class="flex w-full gap-3">
+      <div class="flex w-full gap-3" :class="{ '-mt-3 -mb-1': !store.showSearch }">
         <button class="h-10" @click="store.showSearch = !store.showSearch">
           <icon-arrow :class="{ 'rotate-90': store.showSearch }" width="25px" />
         </button>
@@ -202,35 +202,6 @@
         >
           {{ renderedString }}
         </div>
-
-        <section class="mt-12">
-          <header class="my-2">Shared history</header>
-          <div
-            class="bg-slate-900 mb-2 rounded-md p-2"
-            :key="index"
-            v-for="(history, index) in store.sharedHistory"
-          >
-            <div class="flex">
-              <div class="truncate flex-1 text-ellipsis whitespace-nowrap block">
-                {{ history || '-empty-' }}
-              </div>
-              <button class="p-2 bg-slate-800 rounded-lg" @click="removeShareHistory(index)">
-                <icon-delete class="h-3" />
-              </button>
-            </div>
-
-            <div class="flex flex-wrap gap-2 mt-2">
-              <div :key="vIndex" v-for="(fromVariable, vIndex) in currentPrompt.variables">
-                <button
-                  class="button text-xs shadow-lg bg-gray-700 rounded-lg px-3 mb-1 py-[5px] flex"
-                  @click="pasteShareHistory(index, fromVariable)"
-                >
-                  {{ fromVariable.name }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
       </section>
 
       <section v-if="currentPrompt" class="col-span-7 flex-1 -mx-1">
@@ -346,11 +317,6 @@
             </div>
 
             <hr class="mr-3" />
-          </section>
-
-          <section class="text-sm mt-3 text-gray-400">
-            <div>Clicked {{ currentPrompt.copied }}</div>
-            <div>Last copied {{ formatDate(currentPrompt.copiedAt) }}</div>
           </section>
 
           <section v-if="isEditMode">
@@ -501,6 +467,40 @@
 
     <RouterView />
   </div>
+
+  <section class="mt-0 mb-12 px-2 text-white">
+    <section class="text-sm mt-3 text-gray-400">
+      <div>Clicked {{ currentPrompt.copied }}</div>
+      <div>Last copied {{ formatDate(currentPrompt.copiedAt) }}</div>
+    </section>
+
+    <header class="my-2">Shared history</header>
+    <div
+      class="bg-slate-900 mb-2 rounded-md p-2"
+      :key="index"
+      v-for="(history, index) in store.sharedHistory"
+    >
+      <div class="flex">
+        <div class="truncate flex-1 text-ellipsis whitespace-nowrap block">
+          {{ history || '-empty-' }}
+        </div>
+        <button class="p-2 bg-slate-800 rounded-lg" @click="removeShareHistory(index)">
+          <icon-delete class="h-3" />
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mt-2">
+        <div :key="vIndex" v-for="(fromVariable, vIndex) in currentPrompt.variables">
+          <button
+            class="button text-xs shadow-lg bg-gray-700 rounded-lg px-3 mb-1 py-[5px] flex"
+            @click="pasteShareHistory(index, fromVariable)"
+          >
+            {{ fromVariable.name }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
   <!--  float margin    -->
   <div class="h-[90px] w-full"></div>
 
@@ -529,7 +529,7 @@
 
 <style scoped>
 .shadow-t {
-  box-shadow: 0 -4px 12px rgb(4 4 4 / 27%);
+  box-shadow: 0 -4px 12px 20px rgb(4 4 4 / 27%);
 }
 </style>
 
