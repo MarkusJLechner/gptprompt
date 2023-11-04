@@ -536,6 +536,9 @@
           >
           <icon-share width="25px" />
         </button>
+        <button class="button bg-blue-700 mb-0" @click="openFirstLink">
+          <icon-link width="25px" />
+        </button>
 
         <button class="button bg-blue-700 mb-0" @click="copy">
           <icon-copy width="25px" />
@@ -587,6 +590,7 @@ import IconStar from '@/components/IconStar.vue'
 import type { Prompt, Store } from '@/types'
 import IconMagnifying from '@/components/IconMagnifying.vue'
 import IconShare from '@/components/IconShare.vue'
+import IconLink from '@/components/IconLink.vue'
 
 const maxShareHistory = 10
 
@@ -955,6 +959,12 @@ function applyShared() {
     nextTick(function () {
       scrapeFromTo()
     })
+  }
+}
+
+function openFirstLink() {
+  if (currentPrompt.value?.links[0] && currentPrompt.value?.variables[0]) {
+    gotoLink(currentPrompt.value.links[0], currentPrompt.value?.variables[0])
   }
 }
 
