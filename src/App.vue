@@ -52,7 +52,12 @@
               'bg-gray-400 border-b-2': selectedPrompt === prompt.id,
               'bg-gray-600': selectedPrompt !== prompt.id,
             }"
-            @click="selectPrompt(prompt.id)"
+            @click="
+              () => {
+                store.showSearch = false
+                selectPrompt(prompt.id)
+              }
+            "
             class="flex-1 button text-left"
           >
             <icon-star
@@ -228,9 +233,16 @@
                 <icon-delete width="25px" />
               </button>
             </div>
-            <div class="text-white" v-if="!isEditMode">
+            <div class="text-white flex-1" v-if="!isEditMode">
               {{ variable.name || '-' }}
             </div>
+            <button
+              class="text-xs bg-blue-800/20 text-gray-400 rounded px-2 py-1"
+              v-if="!isEditMode"
+              @click="addShareHistory(variable.text)"
+            >
+              to shared
+            </button>
           </div>
 
           <input-text-area
@@ -254,6 +266,7 @@
               <input-checkbox class="" v-model="variable.readonly">readonly</input-checkbox>
               <input-checkbox class="" v-model="variable.shareTarget">shared</input-checkbox>
               <input-checkbox class="" v-model="variable.fetchOnShare">fetch</input-checkbox>
+              <input-checkbox class="" v-model="variable.canClear">can clear</input-checkbox>
             </div>
 
             <div v-if="!isEditMode && variable.scrapeTo">
@@ -515,10 +528,19 @@
         </button>
       </div>
       <div class="flex flex-1 justify-end gap-4 h-full" v-if="currentPrompt">
+        <button class="button bg-blue-700 mb-0" @click="applyShared">
+          <span
+            class="font-normal absolute -mt-8 text-xs text-left -ml-7 truncate"
+            style="max-width: 70px"
+            >{{ currentShared }}</span
+          >
+          <icon-share width="25px" />
+        </button>
+
         <button class="button bg-blue-700 mb-0" @click="copy">
           <icon-copy width="25px" />
         </button>
-        <button class="button bg-blue-700 mb-0" @click="goto">
+        <button class="button bg-lime-700 mb-0" @click="goto">
           <icon-send v-if="!anyLoading" width="25px" />
           <icon-spinner v-if="anyLoading" width="25px" class="animate-spin" />
         </button>
@@ -564,8 +586,9 @@ import predefinedData from '@/predefinedData'
 import IconStar from '@/components/IconStar.vue'
 import type { Prompt, Store } from '@/types'
 import IconMagnifying from '@/components/IconMagnifying.vue'
+import IconShare from '@/components/IconShare.vue'
 
-const maxShareHistory = 3
+const maxShareHistory = 10
 
 let listView = ref(false)
 
@@ -624,6 +647,9 @@ onMounted(() => {
         }
 
         currentPrompt.value.variables.forEach((v: any) => {
+          if (v.canClear) {
+            v.text = ''
+          }
           if (v.shareTarget) {
             v.text = text
 
@@ -807,6 +833,10 @@ const currentPrompt: ComputedRef<Prompt | undefined> = computed(() => {
   return store.prompts.find((p: any) => p.id === selectedPrompt.value)
 })
 
+const currentShared: ComputedRef<string | undefined> = computed(() => {
+  return store.sharedHistory[0] ?? ''
+})
+
 const isEditMode = computed(() => {
   return store.editMode
 })
@@ -836,6 +866,7 @@ const defaultStore: Store = {
           scrapeTo: false,
           readonly: false,
           fetchOnShare: false,
+          canClear: true,
         },
         {
           id: nanoid(),
@@ -847,6 +878,7 @@ const defaultStore: Store = {
           scrapeTo: true,
           readonly: false,
           fetchOnShare: true,
+          canClear: true,
         },
       ],
       links: [],
@@ -910,6 +942,16 @@ function selectPrompt(id: string) {
   localStorage.setItem('selectPrompt', id)
 }
 
+function applyShared() {
+  if (store.sharedHistory[0] && currentPrompt.value?.variables[0]) {
+    currentPrompt.value.variables[0].text = store.sharedHistory[0]
+    window.scrollTo(0, 0)
+    nextTick(function () {
+      scrapeFromTo()
+    })
+  }
+}
+
 function copy() {
   const string = parseString()
   copyToClipboard(string)
@@ -943,6 +985,8 @@ function scrapeToVariable(scrape: any, fromVariable: any, toVariable: any) {
   console.log('Start scrape', { scrapeUrl, url })
 
   scrape.loading = true
+
+  toVariable.text = ''
 
   return fetch(`${scrapeUrl}${encodeURIComponent(url)}`)
     .then((response) => {
@@ -1128,6 +1172,7 @@ function addPrompt() {
         scrapeTo: false,
         readonly: false,
         fetchOnShare: false,
+        canClear: true,
       },
       {
         id: nanoid(),
@@ -1139,6 +1184,7 @@ function addPrompt() {
         scrapeTo: true,
         readonly: false,
         fetchOnShare: true,
+        canClear: true,
       },
     ],
     links: [], //[{ id: nanoid(), url: '', name: '' }],
@@ -1231,6 +1277,7 @@ function addVariable() {
     scrapeTo: false,
     readonly: false,
     fetchOnShare: false,
+    canClear: true,
   })
 }
 

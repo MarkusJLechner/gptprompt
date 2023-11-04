@@ -8,6 +8,7 @@ export interface Variable {
   scrapeTo: boolean
   readonly: boolean
   fetchOnShare: boolean
+  canClear: boolean
 }
 
 export interface Link {
