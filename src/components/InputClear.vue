@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'enter'])
 const props = defineProps({
   modelValue: String,
 })
@@ -62,6 +62,7 @@ function isFocused() {
 }
 
 function blur() {
+  emit('enter')
   setTimeout(() => {
     refInput.value.blur()
   }, 30)

@@ -13,6 +13,7 @@
             ref="refInputClear"
             v-model="inputSearch"
             @click="clickFocus"
+            @enter="store.showSearch = false"
             placeholder="Search"
             class="flex-1 h-10"
           />
@@ -503,7 +504,7 @@
   <!--  float margin    -->
   <div class="h-[90px] w-full"></div>
 
-  <div class="w-full h-[60px] flex-col fixed bottom-0 backdrop-blur-sm shadow-t flex p-2">
+  <div class="w-full h-[60px] flex-col fixed bottom-0 backdrop-blur-sm shadow-t flex p-2" style="">
     <div class="absolute -mt-8 text-white text-sm" style="text-shadow: #000 1px 0 10px">
       {{ currentPrompt?.name ?? 'none' }}
     </div>
@@ -564,7 +565,7 @@ import IconStar from '@/components/IconStar.vue'
 import type { Prompt, Store } from '@/types'
 import IconMagnifying from '@/components/IconMagnifying.vue'
 
-const maxShareHistory = 6
+const maxShareHistory = 3
 
 let listView = ref(false)
 
@@ -596,6 +597,8 @@ const isActive = ref(true)
 
 const handleVisibilityChange = () => {
   isActive.value = document.visibilityState === 'visible'
+
+  store.showSearch = false
 }
 
 onUnmounted(() => {
@@ -642,6 +645,8 @@ onMounted(() => {
   }, 80)
 
   renderedString.value = parseString()
+
+  store.showSearch = false
 })
 
 function toggleSearch() {
@@ -878,6 +883,13 @@ watch(
   },
 )
 
+watch(
+  () => inputSearch.value,
+  () => {
+    filteredStore.value[0]?.id && selectPrompt(filteredStore.value[0]?.id)
+  },
+)
+
 watch(isActive, () => {
   resizeAllElements()
   scrollToActive()
@@ -1017,15 +1029,71 @@ function copyToClipboard(str: string) {
   document.body.removeChild(el)
 }
 
-const filteredStore = computed(() => {
-  return store.prompts
-    .filter((p: any) => p.name.toLowerCase().includes(inputSearch.value.toLowerCase()))
-    .sort((a, b) => {
-      if (a.favorite && !b.favorite) return -1
-      if (!a.favorite && b.favorite) return 1
+const filteredStore: Prompt[] = computed(() => {
+  const isSearch = !!inputSearch.value
+
+  let prompts = inputSearch.value
+    ? fuzzySearch(inputSearch.value, store.prompts, 'name')
+    : store.prompts
+  return prompts.sort((a, b) => {
+    if (a.favorite && !b.favorite) return -1
+    if (!a.favorite && b.favorite) return 1
+    if (!isSearch) {
       return (b.copied ?? 0) - (a.copied ?? 0)
-    })
+    }
+
+    return 0
+  })
 })
+
+function fuzzySearch(input, objects, key) {
+  const terms = input.toLowerCase().split(/\s+/)
+  const concatenatedTerms = terms.join('') // Concatenate all terms for sequential matching
+
+  return objects
+    .map((obj) => {
+      const value = obj[key].toLowerCase()
+      let termMatchScore = 0
+      let allTermsMatch = true
+      let concatenatedMatchScore = 0
+      let concatenatedMatchIndex = 0
+
+      // Check each term is in the string
+      terms.forEach((term) => {
+        let termIndex = value.indexOf(term)
+        if (termIndex === -1) {
+          allTermsMatch = false
+        } else {
+          termMatchScore += value.length - termIndex // Score term based on position
+        }
+      })
+
+      // Check concatenated terms match in sequence
+      for (let char of concatenatedTerms) {
+        let charIndex = value.indexOf(char, concatenatedMatchIndex)
+        if (charIndex !== -1 && charIndex >= concatenatedMatchIndex) {
+          concatenatedMatchScore++
+          concatenatedMatchIndex = charIndex + 1
+        } else {
+          concatenatedMatchScore = 0
+          break
+        }
+      }
+
+      // If not all terms match, give a score of 0
+      if (!allTermsMatch) {
+        termMatchScore = 0
+      }
+
+      // Combine scores from term matches and sequential character match
+      let totalScore = termMatchScore + concatenatedMatchScore
+
+      return { obj, score: totalScore }
+    })
+    .filter((item) => item.score > 0) // Keep only items that match all terms or the sequential characters
+    .sort((a, b) => b.score - a.score || a.obj[key].localeCompare(b.obj[key])) // Sort by score, then alphabetically
+    .map((item) => item.obj) // Return the objects, not the score wrapper
+}
 
 const filteredPredefinedDataPrompts = computed(() => {
   return predefinedData.prompts
