@@ -1073,7 +1073,7 @@ function copyToClipboard(str: string) {
   document.body.removeChild(el)
 }
 
-const filteredStore: Prompt[] = computed(() => {
+const filteredStore: ComputedRef<Prompt[]> = computed(() => {
   const isSearch = !!inputSearch.value
 
   let prompts = inputSearch.value
