@@ -802,9 +802,15 @@ function removeShareHistory(indexOf) {
 }
 
 function pasteShareHistory(index, variable) {
+  if (index !== 0) {
+    addShareHistory(store.sharedHistory[index])
+  }
+
   variable.text = store.sharedHistory[index]
 
   scrapeFromTo()
+
+  window.scrollTo(0, 0)
 }
 
 function deSelectAllScrapeFetchOnShare() {
