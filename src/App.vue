@@ -481,7 +481,7 @@
     <RouterView />
   </div>
 
-  <section class="mt-0 mb-12 px-2 text-white">
+  <section v-if="currentPrompt" class="mt-0 mb-12 px-2 text-white">
     <section class="text-sm mt-3 text-gray-400">
       <div>Clicked {{ currentPrompt.copied }}</div>
       <div>Last copied {{ formatDate(currentPrompt.copiedAt) }}</div>
